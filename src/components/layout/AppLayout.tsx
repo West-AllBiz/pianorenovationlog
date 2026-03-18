@@ -48,7 +48,7 @@ export function AppLayout() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <h1 className="font-heading text-lg font-semibold">Keystone Pianos</h1>
+          <h1 className="font-heading text-lg font-semibold">Piano Renovation Log</h1>
         </header>
 
         <main className="flex-1 overflow-y-auto">
