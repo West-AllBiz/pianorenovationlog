@@ -1,15 +1,16 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, SlidersHorizontal, Plus, ChevronDown, Download } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, Download } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { samplePianos, sampleExpenses } from '@/data/sampleData';
-import { STATUS_LABELS, STATUS_COLORS, PIANO_TYPE_LABELS, PianoStatus } from '@/types/piano';
+import { STATUS_LABELS, STATUS_COLORS, PIANO_TYPE_LABELS, OWNERSHIP_LABELS, OWNERSHIP_COLORS, COLOR_TAG_HEX, PianoStatus, OwnershipCategory } from '@/types/piano';
 
 export default function Inventory() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<PianoStatus | 'all'>('all');
+  const [ownershipFilter, setOwnershipFilter] = useState<OwnershipCategory | 'all'>('all');
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = useMemo(() => {
@@ -18,12 +19,14 @@ export default function Inventory() {
         !search ||
         p.brand.toLowerCase().includes(search.toLowerCase()) ||
         p.model.toLowerCase().includes(search.toLowerCase()) ||
-        p.serialNumber.includes(search) ||
-        p.inventoryId.toLowerCase().includes(search.toLowerCase());
+        p.serialNumber.toLowerCase().includes(search.toLowerCase()) ||
+        p.inventoryId.toLowerCase().includes(search.toLowerCase()) ||
+        p.tag.toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesOwnership = ownershipFilter === 'all' || p.ownershipCategory === ownershipFilter;
+      return matchesSearch && matchesStatus && matchesOwnership;
     });
-  }, [search, statusFilter]);
+  }, [search, statusFilter, ownershipFilter]);
 
   const getExpenseTotal = (pianoId: string) =>
     sampleExpenses.filter(e => e.pianoId === pianoId).reduce((sum, e) => sum + e.amount, 0);
@@ -54,7 +57,7 @@ export default function Inventory() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by brand, model, serial, or ID..."
+            placeholder="Search by brand, serial, ID, or tag..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 h-10"
@@ -67,8 +70,10 @@ export default function Inventory() {
           onClick={() => setShowFilters(!showFilters)}
         >
           <SlidersHorizontal className="h-4 w-4 mr-1.5" /> Filters
-          {statusFilter !== 'all' && (
-            <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">1</span>
+          {(statusFilter !== 'all' || ownershipFilter !== 'all') && (
+            <span className="ml-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
+              {(statusFilter !== 'all' ? 1 : 0) + (ownershipFilter !== 'all' ? 1 : 0)}
+            </span>
           )}
         </Button>
       </div>
@@ -77,25 +82,47 @@ export default function Inventory() {
         <motion.div
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
-          className="mb-4 p-4 bg-card rounded-lg border overflow-hidden"
+          className="mb-4 p-4 bg-card rounded-lg border overflow-hidden space-y-4"
         >
-          <label className="text-sm font-medium mb-2 block">Status</label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`status-badge transition-colors ${statusFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
-            >
-              All
-            </button>
-            {(Object.entries(STATUS_LABELS) as [PianoStatus, string][]).map(([value, label]) => (
+          <div>
+            <label className="text-sm font-medium mb-2 block">Ownership</label>
+            <div className="flex flex-wrap gap-2">
               <button
-                key={value}
-                onClick={() => setStatusFilter(value)}
-                className={`status-badge transition-colors ${statusFilter === value ? 'bg-primary text-primary-foreground' : `${STATUS_COLORS[value]} hover:opacity-80`}`}
+                onClick={() => setOwnershipFilter('all')}
+                className={`status-badge transition-colors ${ownershipFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
               >
-                {label}
+                All
               </button>
-            ))}
+              {(Object.entries(OWNERSHIP_LABELS) as [OwnershipCategory, string][]).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setOwnershipFilter(value)}
+                  className={`status-badge transition-colors ${ownershipFilter === value ? 'bg-primary text-primary-foreground' : `${OWNERSHIP_COLORS[value]} hover:opacity-80`}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">Status</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={`status-badge transition-colors ${statusFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
+              >
+                All
+              </button>
+              {(Object.entries(STATUS_LABELS) as [PianoStatus, string][]).map(([value, label]) => (
+                <button
+                  key={value}
+                  onClick={() => setStatusFilter(value)}
+                  className={`status-badge transition-colors ${statusFilter === value ? 'bg-primary text-primary-foreground' : `${STATUS_COLORS[value]} hover:opacity-80`}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </motion.div>
       )}
@@ -104,7 +131,6 @@ export default function Inventory() {
       <div className="space-y-2">
         {filtered.map((piano, i) => {
           const totalExpenses = getExpenseTotal(piano.id);
-          const estimatedProfit = (piano.soldPrice || piano.askingPrice || 0) - totalExpenses;
 
           return (
             <motion.div
@@ -117,25 +143,37 @@ export default function Inventory() {
                 to={`/piano/${piano.id}`}
                 className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border bg-card p-4 hover:shadow-sm transition-shadow"
               >
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0 hidden sm:block"
+                  style={{ backgroundColor: COLOR_TAG_HEX[piano.colorTag] }}
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full sm:hidden"
+                      style={{ backgroundColor: COLOR_TAG_HEX[piano.colorTag] }}
+                    />
                     <span className="text-xs font-mono text-muted-foreground">{piano.inventoryId}</span>
                     <span className={`status-badge ${STATUS_COLORS[piano.status]}`}>
                       {STATUS_LABELS[piano.status]}
                     </span>
-                    <span className="text-xs text-muted-foreground">{PIANO_TYPE_LABELS[piano.pianoType]}</span>
+                    <span className={`status-badge ${OWNERSHIP_COLORS[piano.ownershipCategory]}`}>
+                      {OWNERSHIP_LABELS[piano.ownershipCategory]}
+                    </span>
                   </div>
                   <p className="font-semibold">{piano.brand} {piano.model}</p>
                   <p className="text-sm text-muted-foreground">
-                    {piano.finish} · {piano.yearBuilt ? `c.${piano.yearBuilt}` : 'Year unknown'} · {piano.storageLocation}
+                    SN: {piano.serialNumber} · {PIANO_TYPE_LABELS[piano.pianoType]} · {piano.tag}
                   </p>
                 </div>
 
                 <div className="flex items-center gap-6 text-sm sm:flex-shrink-0">
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Cost</p>
-                    <p className="font-medium">${totalExpenses.toLocaleString()}</p>
-                  </div>
+                  {totalExpenses > 0 && (
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Cost</p>
+                      <p className="font-medium">${totalExpenses.toLocaleString()}</p>
+                    </div>
+                  )}
                   {(piano.askingPrice || piano.soldPrice) && (
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">{piano.soldPrice ? 'Sold' : 'Asking'}</p>

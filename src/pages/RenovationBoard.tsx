@@ -2,14 +2,14 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { samplePianos } from '@/data/sampleData';
-import { STATUS_LABELS, PianoStatus } from '@/types/piano';
+import { STATUS_LABELS, PianoStatus, COLOR_TAG_HEX, OWNERSHIP_LABELS } from '@/types/piano';
 
 const KANBAN_STAGES: PianoStatus[] = [
-  'acquired', 'scheduled_pickup', 'in_transit', 'received',
-  'intake_inspection', 'scope_defined', 'awaiting_parts',
-  'cabinet_work', 'action_work', 'string_tuning',
-  'voicing_regulation', 'final_detail', 'quality_control',
-  'ready_for_listing', 'listed',
+  'acquired', 'pickup_scheduled', 'transport',
+  'intake_inspection', 'evaluation', 'awaiting_parts',
+  'restoration_work', 'regulation', 'voicing', 'tuning',
+  'cabinet_work', 'final_qc', 'ready_for_sale',
+  'client_pickup', 'donation_delivery',
 ];
 
 export default function RenovationBoard() {
@@ -53,9 +53,17 @@ export default function RenovationBoard() {
 
               {col.pianos.map(piano => (
                 <Link key={piano.id} to={`/piano/${piano.id}`} className="kanban-card block">
-                  <p className="text-xs font-mono text-muted-foreground mb-1">{piano.inventoryId}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: COLOR_TAG_HEX[piano.colorTag] }}
+                    />
+                    <p className="text-xs font-mono text-muted-foreground">{piano.inventoryId}</p>
+                  </div>
                   <p className="font-medium text-sm">{piano.brand} {piano.model}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{piano.finish} · {piano.storageLocation}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {OWNERSHIP_LABELS[piano.ownershipCategory]} · {piano.tag}
+                  </p>
                   <div className="flex items-center justify-between mt-2">
                     <div className="w-16 h-1 bg-muted rounded-full">
                       <div className="h-full bg-primary rounded-full" style={{ width: `${piano.percentComplete}%` }} />

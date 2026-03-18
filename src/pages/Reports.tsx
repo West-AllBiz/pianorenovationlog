@@ -1,34 +1,53 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { samplePianos, sampleExpenses } from '@/data/sampleData';
-import { PIANO_TYPE_LABELS } from '@/types/piano';
+import { samplePianos, sampleExpenses, sampleBusinessCosts, sampleClientJobs, sampleDonations } from '@/data/sampleData';
+import { PIANO_TYPE_LABELS, OWNERSHIP_LABELS } from '@/types/piano';
 
 export default function Reports() {
   const data = useMemo(() => {
-    const totalCost = sampleExpenses.reduce((s, e) => s + e.amount, 0);
-    const soldPianos = samplePianos.filter(p => p.soldPrice);
-    const totalRevenue = soldPianos.reduce((s, p) => s + (p.soldPrice || 0), 0);
-    const totalProfit = totalRevenue - soldPianos.reduce((s, p) => {
-      const cost = sampleExpenses.filter(e => e.pianoId === p.id).reduce((sum, e) => sum + e.amount, 0);
-      return s + cost;
-    }, 0);
+    // Business inventory profitability
+    const businessPianos = samplePianos.filter(p => p.ownershipCategory === 'business_inventory');
+    const totalInvested = Object.values(sampleBusinessCosts).reduce((s, c) => s + c.totalInvestment, 0);
+    const totalProjectedProfit = Object.values(sampleBusinessCosts).reduce((s, c) => s + (c.projectedProfit || 0), 0);
 
-    const byCategory: Record<string, number> = {};
-    sampleExpenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
+    const pianoProfit = businessPianos.map(p => {
+      const cost = sampleBusinessCosts[p.id];
+      return {
+        name: `${p.brand} ${p.model}`.trim(),
+        id: p.inventoryId,
+        cost: cost?.totalInvestment || 0,
+        estimatedSale: cost?.estimatedSalePrice || 0,
+        profit: cost?.projectedProfit || 0,
+      };
+    }).sort((a, b) => b.profit - a.profit);
 
+    // Client work
+    const clientJobs = Object.entries(sampleClientJobs).map(([pianoId, job]) => {
+      const piano = samplePianos.find(p => p.id === pianoId);
+      return { ...job, pianoName: piano ? `${piano.brand} ${piano.model}`.trim() : pianoId };
+    });
+    const clientTotalEstimate = clientJobs.reduce((s, j) => s + (j.estimate || 0), 0);
+    const clientTotalDeposits = clientJobs.reduce((s, j) => s + j.depositReceived, 0);
+
+    // Donations
+    const donations = Object.entries(sampleDonations).map(([pianoId, d]) => {
+      const piano = samplePianos.find(p => p.id === pianoId);
+      return { ...d, pianoName: piano ? `${piano.brand} ${piano.model}`.trim() : pianoId };
+    });
+
+    // Archive
+    const archivePianos = samplePianos.filter(p => p.ownershipCategory === 'restoration_archive');
+
+    // By type
     const byType: Record<string, number> = {};
     samplePianos.forEach(p => { byType[p.pianoType] = (byType[p.pianoType] || 0) + 1; });
 
-    const pianoProfit = samplePianos
-      .filter(p => p.soldPrice || p.askingPrice)
-      .map(p => {
-        const cost = sampleExpenses.filter(e => e.pianoId === p.id).reduce((s, e) => s + e.amount, 0);
-        const revenue = p.soldPrice || p.askingPrice || 0;
-        return { name: `${p.brand} ${p.model}`, cost, revenue, profit: revenue - cost, isSold: !!p.soldPrice };
-      })
-      .sort((a, b) => b.profit - a.profit);
+    // Expenses by category
+    const byCategory: Record<string, number> = {};
+    sampleExpenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
+    const totalExpenses = sampleExpenses.reduce((s, e) => s + e.amount, 0);
 
-    return { totalCost, totalRevenue, totalProfit, byCategory: Object.entries(byCategory).sort((a, b) => b[1] - a[1]), byType: Object.entries(byType), pianoProfit };
+    return { totalInvested, totalProjectedProfit, pianoProfit, clientJobs, clientTotalEstimate, clientTotalDeposits, donations, archivePianos, byType: Object.entries(byType), byCategory: Object.entries(byCategory).sort((a, b) => b[1] - a[1]), totalExpenses };
   }, []);
 
   return (
@@ -41,28 +60,105 @@ export default function Reports() {
       {/* Summary cards */}
       <div className="grid sm:grid-cols-3 gap-4 mb-8">
         <div className="stat-card">
-          <p className="text-xs text-muted-foreground">Total Invested</p>
-          <p className="text-3xl font-bold font-heading">${data.totalCost.toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">Total Invested (Business)</p>
+          <p className="text-3xl font-bold font-heading">${data.totalInvested.toLocaleString()}</p>
         </div>
         <div className="stat-card">
-          <p className="text-xs text-muted-foreground">Total Revenue</p>
-          <p className="text-3xl font-bold font-heading text-success">${data.totalRevenue.toLocaleString()}</p>
-        </div>
-        <div className="stat-card">
-          <p className="text-xs text-muted-foreground">Net Profit (Sold)</p>
-          <p className={`text-3xl font-bold font-heading ${data.totalProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-            ${data.totalProfit.toLocaleString()}
+          <p className="text-xs text-muted-foreground">Projected Profit</p>
+          <p className={`text-3xl font-bold font-heading ${data.totalProjectedProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+            ${data.totalProjectedProfit.toLocaleString()}
           </p>
+        </div>
+        <div className="stat-card">
+          <p className="text-xs text-muted-foreground">Client Estimates</p>
+          <p className="text-3xl font-bold font-heading">${data.clientTotalEstimate.toLocaleString()}</p>
         </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
+        {/* Business Inventory Profitability */}
+        <div className="bg-card rounded-xl border p-5">
+          <h3 className="font-heading font-semibold mb-4">Business Inventory Profitability</h3>
+          <div className="space-y-3">
+            {data.pianoProfit.map((p) => (
+              <div key={p.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                <div>
+                  <p className="text-sm font-medium">{p.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {p.id} · Cost: ${p.cost.toLocaleString()} · Est. Sale: ${p.estimatedSale.toLocaleString()}
+                  </p>
+                </div>
+                <span className={`text-sm font-bold ${p.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {p.profit >= 0 ? '+' : ''}${p.profit.toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Client Work */}
+        <div className="bg-card rounded-xl border p-5">
+          <h3 className="font-heading font-semibold mb-4">Client Work</h3>
+          {data.clientJobs.length > 0 ? (
+            <div className="space-y-3">
+              {data.clientJobs.map((job) => (
+                <div key={job.pianoId} className="py-2 border-b last:border-0">
+                  <div className="flex justify-between">
+                    <p className="text-sm font-medium">{job.pianoName}</p>
+                    <span className="text-sm font-medium">{job.estimate ? `$${job.estimate.toLocaleString()}` : '—'}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Client: {job.clientName} · Deposit: ${job.depositReceived.toLocaleString()} · Due: ${job.balanceDue.toLocaleString()}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No active client jobs</p>
+          )}
+        </div>
+
+        {/* Donation Projects */}
+        <div className="bg-card rounded-xl border p-5">
+          <h3 className="font-heading font-semibold mb-4">Donation Projects</h3>
+          {data.donations.length > 0 ? (
+            <div className="space-y-3">
+              {data.donations.map((d) => (
+                <div key={d.pianoId} className="py-2 border-b last:border-0">
+                  <p className="text-sm font-medium">{d.pianoName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Recipient: {d.donationRecipient} · Status: {d.donationStatus.replace(/_/g, ' ')}
+                    {d.donationValue ? ` · Value: $${d.donationValue.toLocaleString()}` : ''}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No donation projects</p>
+          )}
+        </div>
+
+        {/* Restoration Archive */}
+        <div className="bg-card rounded-xl border p-5">
+          <h3 className="font-heading font-semibold mb-4">Restoration Archive</h3>
+          {data.archivePianos.length > 0 ? (
+            <div className="space-y-3">
+              {data.archivePianos.map((p) => (
+                <div key={p.id} className="py-2 border-b last:border-0">
+                  <p className="text-sm font-medium">{p.brand} {p.model}</p>
+                  <p className="text-xs text-muted-foreground">{p.inventoryId} · SN: {p.serialNumber} · {p.privateNotes || '—'}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No archived pianos</p>
+          )}
+        </div>
+
         {/* Expenses by category */}
         <div className="bg-card rounded-xl border p-5">
           <h3 className="font-heading font-semibold mb-4">Expenses by Category</h3>
           <div className="space-y-3">
             {data.byCategory.map(([cat, amount]) => {
-              const pct = (amount / data.totalCost) * 100;
+              const pct = data.totalExpenses > 0 ? (amount / data.totalExpenses) * 100 : 0;
               return (
                 <div key={cat}>
                   <div className="flex items-center justify-between text-sm mb-1">
@@ -75,26 +171,6 @@ export default function Reports() {
                 </div>
               );
             })}
-          </div>
-        </div>
-
-        {/* Profit by piano */}
-        <div className="bg-card rounded-xl border p-5">
-          <h3 className="font-heading font-semibold mb-4">Profit by Piano</h3>
-          <div className="space-y-3">
-            {data.pianoProfit.map((p) => (
-              <div key={p.name} className="flex items-center justify-between py-2 border-b last:border-0">
-                <div>
-                  <p className="text-sm font-medium">{p.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Cost: ${p.cost.toLocaleString()} · {p.isSold ? 'Sold' : 'Est.'}: ${p.revenue.toLocaleString()}
-                  </p>
-                </div>
-                <span className={`text-sm font-bold ${p.profit >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  {p.profit >= 0 ? '+' : ''}${p.profit.toLocaleString()}
-                </span>
-              </div>
-            ))}
           </div>
         </div>
 
