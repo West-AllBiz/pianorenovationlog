@@ -16,15 +16,15 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Workshop Name</Label>
-              <Input defaultValue="Keystone Pianos" className="h-11" />
+              <Input defaultValue="Piano Renovation Log" className="h-11" />
             </div>
             <div className="space-y-2">
               <Label>Contact Email</Label>
-              <Input defaultValue="info@keystonepianos.com" className="h-11" />
+              <Input defaultValue="nick@pianorenolog.com" className="h-11" />
             </div>
             <div className="space-y-2">
               <Label>Phone</Label>
-              <Input defaultValue="(203) 555-0147" className="h-11" />
+              <Input defaultValue="" className="h-11" />
             </div>
             <Button size="sm">Save Changes</Button>
           </div>

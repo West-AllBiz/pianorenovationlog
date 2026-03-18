@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Piano, Wrench, Clock, Tag, DollarSign, TrendingUp,
-  PackageCheck, ArrowRight, Activity
+  PackageCheck, ArrowRight, Activity, Users, Heart, Archive
 } from 'lucide-react';
-import { samplePianos, sampleExpenses, sampleActivity } from '@/data/sampleData';
-import { STATUS_LABELS, STATUS_COLORS } from '@/types/piano';
+import { samplePianos, sampleExpenses, sampleActivity, sampleBusinessCosts, sampleClientJobs } from '@/data/sampleData';
+import { STATUS_LABELS, STATUS_COLORS, OWNERSHIP_LABELS, OWNERSHIP_COLORS, COLOR_TAG_HEX } from '@/types/piano';
 
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
@@ -15,27 +15,36 @@ const fadeIn = {
 
 export default function Dashboard() {
   const stats = useMemo(() => {
-    const restorationStatuses = ['intake_inspection', 'scope_defined', 'awaiting_parts', 'cabinet_work', 'action_work', 'string_tuning', 'voicing_regulation', 'final_detail', 'quality_control'];
-    const totalInventory = samplePianos.filter(p => p.status !== 'archived').length;
+    const totalPianos = samplePianos.length;
+    const businessInventory = samplePianos.filter(p => p.ownershipCategory === 'business_inventory').length;
+    const clientPianos = samplePianos.filter(p => p.ownershipCategory === 'client_piano').length;
+    const donationProjects = samplePianos.filter(p => p.ownershipCategory === 'donation_project').length;
+    const restorationArchive = samplePianos.filter(p => p.ownershipCategory === 'restoration_archive').length;
+
+    const restorationStatuses = ['restoration_work', 'regulation', 'voicing', 'tuning', 'cabinet_work'];
     const inRestoration = samplePianos.filter(p => restorationStatuses.includes(p.status)).length;
     const awaitingParts = samplePianos.filter(p => p.status === 'awaiting_parts').length;
-    const readyForSale = samplePianos.filter(p => ['ready_for_listing', 'listed'].includes(p.status)).length;
-    const soldThisMonth = samplePianos.filter(p => p.soldDate && p.soldDate.startsWith('2025-02')).length;
-    const totalInvested = sampleExpenses.reduce((sum, e) => sum + e.amount, 0);
-    const totalRevenue = samplePianos.filter(p => p.soldPrice).reduce((sum, p) => sum + (p.soldPrice || 0), 0);
-    const projectedProfit = totalRevenue - totalInvested;
+    const readyForSale = samplePianos.filter(p => p.status === 'ready_for_sale').length;
+    const clientJobsActive = Object.keys(sampleClientJobs).length;
 
-    return { totalInventory, inRestoration, awaitingParts, readyForSale, soldThisMonth, totalInvested, totalRevenue, projectedProfit };
+    const totalInvested = Object.values(sampleBusinessCosts).reduce((sum, c) => sum + c.totalInvestment, 0);
+    const projectedProfit = Object.values(sampleBusinessCosts).reduce((sum, c) => sum + (c.projectedProfit || 0), 0);
+
+    return { totalPianos, businessInventory, clientPianos, donationProjects, restorationArchive, inRestoration, awaitingParts, readyForSale, clientJobsActive, totalInvested, projectedProfit };
   }, []);
 
   const statCards = [
-    { label: 'Total Inventory', value: stats.totalInventory, icon: Piano, color: 'text-foreground' },
+    { label: 'Total Pianos', value: stats.totalPianos, icon: Piano, color: 'text-foreground' },
+    { label: 'Business Inventory', value: stats.businessInventory, icon: Tag, color: 'text-success' },
+    { label: 'Client Pianos', value: stats.clientPianos, icon: Users, color: 'text-info' },
+    { label: 'Donation Projects', value: stats.donationProjects, icon: Heart, color: 'text-primary' },
+    { label: 'Restoration Archive', value: stats.restorationArchive, icon: Archive, color: 'text-warning' },
     { label: 'In Restoration', value: stats.inRestoration, icon: Wrench, color: 'text-warning' },
     { label: 'Awaiting Parts', value: stats.awaitingParts, icon: Clock, color: 'text-destructive' },
-    { label: 'Ready for Sale', value: stats.readyForSale, icon: Tag, color: 'text-success' },
-    { label: 'Sold This Month', value: stats.soldThisMonth, icon: PackageCheck, color: 'text-info' },
+    { label: 'Ready for Sale', value: stats.readyForSale, icon: PackageCheck, color: 'text-success' },
+    { label: 'Client Jobs Active', value: stats.clientJobsActive, icon: Users, color: 'text-info' },
     { label: 'Total Invested', value: `$${stats.totalInvested.toLocaleString()}`, icon: DollarSign, color: 'text-foreground' },
-    { label: 'Total Revenue', value: `$${stats.totalRevenue.toLocaleString()}`, icon: TrendingUp, color: 'text-success' },
+    { label: 'Projected Profit', value: `$${stats.projectedProfit.toLocaleString()}`, icon: TrendingUp, color: 'text-success' },
   ];
 
   const recentActivity = sampleActivity.slice(0, 6);
@@ -75,21 +84,28 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="space-y-2">
-            {samplePianos.filter(p => !['sold', 'delivered', 'archived'].includes(p.status)).slice(0, 5).map((piano) => (
+            {samplePianos.filter(p => !['archived'].includes(p.status)).slice(0, 6).map((piano) => (
               <Link
                 key={piano.id}
                 to={`/piano/${piano.id}`}
                 className="flex items-center gap-4 rounded-lg border bg-card p-4 hover:shadow-sm transition-shadow"
               >
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: COLOR_TAG_HEX[piano.colorTag] }}
+                />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="text-xs text-muted-foreground font-mono">{piano.inventoryId}</span>
                     <span className={`status-badge ${STATUS_COLORS[piano.status]}`}>
                       {STATUS_LABELS[piano.status]}
                     </span>
+                    <span className={`status-badge ${OWNERSHIP_COLORS[piano.ownershipCategory]}`}>
+                      {OWNERSHIP_LABELS[piano.ownershipCategory]}
+                    </span>
                   </div>
                   <p className="font-semibold truncate">{piano.brand} {piano.model}</p>
-                  <p className="text-sm text-muted-foreground">{piano.storageLocation}</p>
+                  <p className="text-sm text-muted-foreground">SN: {piano.serialNumber} · {piano.tag}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="text-sm font-semibold">{piano.percentComplete}%</div>
