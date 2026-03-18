@@ -50,7 +50,7 @@ export default function Login() {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
               <Music className="h-5 w-5 text-primary-foreground" />
             </div>
-            <h1 className="font-heading text-2xl font-bold">Keystone</h1>
+            <h1 className="font-heading text-2xl font-bold">Piano Renovation Log</h1>
           </div>
 
           <h2 className="font-heading text-2xl font-semibold mb-1">Welcome back</h2>

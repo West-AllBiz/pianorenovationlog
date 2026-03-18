@@ -44,7 +44,7 @@ export default function Dashboard() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <motion.div {...fadeIn} transition={{ duration: 0.4 }}>
         <h1 className="font-heading text-2xl sm:text-3xl font-bold mb-1">Dashboard</h1>
-        <p className="text-muted-foreground mb-6">Welcome back, James. Here's your workshop overview.</p>
+        <p className="text-muted-foreground mb-6">Welcome back, Nick. Here's your workshop overview.</p>
       </motion.div>
 
       {/* Stat cards */}

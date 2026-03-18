@@ -57,10 +57,10 @@ export function Sidebar({ onClose }: SidebarProps) {
       <div className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
-            JH
+            NW
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-accent-foreground truncate">James Harrington</p>
+            <p className="text-sm font-medium text-sidebar-accent-foreground truncate">Nick West</p>
             <p className="text-xs text-sidebar-foreground/60">Admin</p>
           </div>
         </div>
