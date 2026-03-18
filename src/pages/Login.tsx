@@ -30,7 +30,7 @@ export default function Login() {
             <Music className="h-8 w-8 text-sidebar-primary-foreground" />
           </div>
           <h1 className="font-heading text-4xl font-bold text-sidebar-accent-foreground mb-4">
-            Keystone Pianos
+            Piano Renovation Log
           </h1>
           <p className="text-sidebar-foreground/70 text-lg leading-relaxed">
             Manage your entire piano workshop — from acquisition through restoration to sale — in one elegant workspace.
