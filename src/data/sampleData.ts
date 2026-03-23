@@ -270,6 +270,11 @@ export const samplePerformanceProfiles: Record<string, PerformanceProfile> = {
     pitchRaiseRequired: true, regulationStatus: 'In Progress', voicingStatus: 'Pending',
     humiditySensitivity: 'Moderate',
   },
+  p5: {
+    pianoId: 'p5', pitchLevel: 'A440 ±15¢', lastTuningDate: null,
+    pitchRaiseRequired: true, regulationStatus: 'Needed', voicingStatus: 'Needed',
+    humiditySensitivity: 'Moderate sensitivity',
+  },
 };
 
 export const sampleSales: Record<string, SaleRecord> = {};
