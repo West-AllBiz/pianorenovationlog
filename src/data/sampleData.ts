@@ -149,6 +149,12 @@ export const sampleInspections: Record<string, ConditionInspection> = {
     action: 3, hammers: 3, dampers: 3, keytops: 3, pedals: 3, trapwork: 3, cabinet: 3, casters: 3,
     recommendedWork: 'Full evaluation pending', priorityLevel: 'medium',
   },
+  p5: {
+    id: 'insp5', pianoId: 'p5', initialAssessment: 'Hardman Peck player piano. Player mechanism adds complexity. Strong cabinet, bass is surprisingly alive.',
+    soundboard: 3, bridges: 3, pinblock: 2, strings: 2, tuningPins: 2,
+    action: 3, hammers: 3, dampers: 3, keytops: 4, pedals: 3, trapwork: 2, cabinet: 4, casters: 3,
+    recommendedWork: 'Pitch raise, full regulation, pedal repair, player mechanism evaluation', priorityLevel: 'medium',
+  },
 };
 
 export const sampleStructuralIssues: Record<string, StructuralIssues> = {
