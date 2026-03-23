@@ -98,7 +98,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'regulation', askingPrice: null, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['client-job'], privateNotes: 'Client: Mike',
-    percentComplete: 60, createdAt: '2026-02-01', updatedAt: '2026-03-10',
+    percentComplete: 60, frictionScore: 4, roiHealth: 'client', createdAt: '2026-02-01', updatedAt: '2026-03-10',
   },
   {
     id: 'p9', inventoryId: 'P-009', tag: 'Tag 9', colorTag: 'lavender',
