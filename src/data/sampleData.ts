@@ -21,7 +21,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'restoration_work', askingPrice: null, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['antique', 'long-term'], privateNotes: 'Antique long-term restoration',
-    percentComplete: 15, createdAt: '2024-06-01', updatedAt: '2026-03-10',
+    percentComplete: 15, frictionScore: 8, roiHealth: 'archive', createdAt: '2024-06-01', updatedAt: '2026-03-10',
   },
   {
     id: 'p2', inventoryId: 'P-002', tag: 'Tag 2', colorTag: 'magenta',
