@@ -65,7 +65,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'awaiting_parts', askingPrice: 3500, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['player-piano'], privateNotes: '',
-    percentComplete: 20, createdAt: '2026-01-10', updatedAt: '2026-03-10',
+    percentComplete: 20, frictionScore: 7, roiHealth: 'watch', createdAt: '2026-01-10', updatedAt: '2026-03-10',
   },
   {
     id: 'p6', inventoryId: 'P-006', tag: 'Tag 6', colorTag: 'dark_blue',
