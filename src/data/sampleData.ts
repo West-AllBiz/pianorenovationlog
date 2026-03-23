@@ -120,7 +120,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'intake_inspection', askingPrice: 1800, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: [], privateNotes: '',
-    percentComplete: 5, createdAt: '2026-03-01', updatedAt: '2026-03-10',
+    percentComplete: 5, frictionScore: 4, roiHealth: 'moderate', createdAt: '2026-03-01', updatedAt: '2026-03-10',
   },
 ];
 
