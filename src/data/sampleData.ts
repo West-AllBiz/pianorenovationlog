@@ -251,6 +251,12 @@ export const sampleCharacterNotes: Record<string, CharacterNotes> = {
     cabinetCharacter: ['original_cabinet'],
     customShopNotes: 'Client wants warmer voicing and lighter touch.',
   },
+  p5: {
+    pianoId: 'p5', tonalCharacter: ['warm', 'rich_bass'],
+    actionFeel: ['heavy_action', 'needs_regulation'], musicalSuitability: ['home_practice', 'practice_instrument'],
+    cabinetCharacter: ['original_cabinet', 'period_antique'],
+    customShopNotes: 'Player mechanism adds significant parts and labor friction. Cap total investment or escalate to Diamond decision with full player rebuild justification. Strong cabinet. Bass is surprisingly alive.',
+  },
 };
 
 export const samplePerformanceProfiles: Record<string, PerformanceProfile> = {
