@@ -21,7 +21,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'restoration_work', askingPrice: null, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['antique', 'long-term'], privateNotes: 'Antique long-term restoration',
-    percentComplete: 15, createdAt: '2024-06-01', updatedAt: '2026-03-10',
+    percentComplete: 15, frictionScore: 8, roiHealth: 'archive', createdAt: '2024-06-01', updatedAt: '2026-03-10',
   },
   {
     id: 'p2', inventoryId: 'P-002', tag: 'Tag 2', colorTag: 'magenta',
@@ -32,7 +32,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'acquired', askingPrice: null, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['upcoming'], privateNotes: 'Upcoming',
-    percentComplete: 0, createdAt: '2026-02-15', updatedAt: '2026-03-10',
+    percentComplete: 0, frictionScore: 3, roiHealth: 'moderate', createdAt: '2026-02-15', updatedAt: '2026-03-10',
   },
   {
     id: 'p3', inventoryId: 'P-003', tag: 'Tag 3', colorTag: 'yellow',
@@ -43,7 +43,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'evaluation', askingPrice: 4500, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: [], privateNotes: '',
-    percentComplete: 10, createdAt: '2025-11-10', updatedAt: '2026-03-10',
+    percentComplete: 10, frictionScore: 5, roiHealth: 'strong', createdAt: '2025-11-10', updatedAt: '2026-03-10',
   },
   {
     id: 'p4', inventoryId: 'P-004', tag: 'Tag 4', colorTag: 'light_green',
@@ -54,7 +54,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'restoration_work', askingPrice: 2000, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: [], privateNotes: '',
-    percentComplete: 35, createdAt: '2025-12-01', updatedAt: '2026-03-10',
+    percentComplete: 35, frictionScore: 4, roiHealth: 'strong', createdAt: '2025-12-01', updatedAt: '2026-03-10',
   },
   {
     id: 'p5', inventoryId: 'P-005', tag: 'Tag 5', colorTag: 'orange',
@@ -65,7 +65,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'awaiting_parts', askingPrice: 3500, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['player-piano'], privateNotes: '',
-    percentComplete: 20, createdAt: '2026-01-10', updatedAt: '2026-03-10',
+    percentComplete: 20, frictionScore: 7, roiHealth: 'watch', createdAt: '2026-01-10', updatedAt: '2026-03-10',
   },
   {
     id: 'p6', inventoryId: 'P-006', tag: 'Tag 6', colorTag: 'dark_blue',
@@ -76,7 +76,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'ready_for_sale', askingPrice: 2800, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: [], privateNotes: '',
-    percentComplete: 100, createdAt: '2025-10-20', updatedAt: '2026-03-10',
+    percentComplete: 100, frictionScore: 2, roiHealth: 'strong', createdAt: '2025-10-20', updatedAt: '2026-03-10',
   },
   {
     id: 'p7', inventoryId: 'P-007', tag: 'Tag 7', colorTag: 'light_blue',
@@ -87,7 +87,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'restoration_work', askingPrice: null, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['donation', 'artist'], privateNotes: 'Artist donation piano',
-    percentComplete: 40, createdAt: '2026-01-20', updatedAt: '2026-03-10',
+    percentComplete: 40, frictionScore: 5, roiHealth: 'mission', createdAt: '2026-01-20', updatedAt: '2026-03-10',
   },
   {
     id: 'p8', inventoryId: 'P-008', tag: 'Tag 8', colorTag: 'purple',
@@ -98,7 +98,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'regulation', askingPrice: null, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['client-job'], privateNotes: 'Client: Mike',
-    percentComplete: 60, createdAt: '2026-02-01', updatedAt: '2026-03-10',
+    percentComplete: 60, frictionScore: 4, roiHealth: 'client', createdAt: '2026-02-01', updatedAt: '2026-03-10',
   },
   {
     id: 'p9', inventoryId: 'P-009', tag: 'Tag 9', colorTag: 'lavender',
@@ -109,7 +109,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'archived', askingPrice: null, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['antique'], privateNotes: 'Antique',
-    percentComplete: 0, createdAt: '2024-01-01', updatedAt: '2026-03-10',
+    percentComplete: 0, frictionScore: 9, roiHealth: 'archive', createdAt: '2024-01-01', updatedAt: '2026-03-10',
   },
   {
     id: 'p10', inventoryId: 'P-010', tag: 'Tag 10', colorTag: 'green',
@@ -120,7 +120,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'intake_inspection', askingPrice: 1800, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: [], privateNotes: '',
-    percentComplete: 5, createdAt: '2026-03-01', updatedAt: '2026-03-10',
+    percentComplete: 5, frictionScore: 4, roiHealth: 'moderate', createdAt: '2026-03-01', updatedAt: '2026-03-10',
   },
 ];
 
@@ -149,6 +149,12 @@ export const sampleInspections: Record<string, ConditionInspection> = {
     action: 3, hammers: 3, dampers: 3, keytops: 3, pedals: 3, trapwork: 3, cabinet: 3, casters: 3,
     recommendedWork: 'Full evaluation pending', priorityLevel: 'medium',
   },
+  p5: {
+    id: 'insp5', pianoId: 'p5', initialAssessment: 'Hardman Peck player piano. Player mechanism adds complexity. Strong cabinet, bass is surprisingly alive.',
+    soundboard: 3, bridges: 3, pinblock: 2, strings: 2, tuningPins: 2,
+    action: 3, hammers: 3, dampers: 3, keytops: 4, pedals: 3, trapwork: 2, cabinet: 4, casters: 3,
+    recommendedWork: 'Pitch raise, full regulation, pedal repair, player mechanism evaluation', priorityLevel: 'medium',
+  },
 };
 
 export const sampleStructuralIssues: Record<string, StructuralIssues> = {
@@ -163,6 +169,17 @@ export const sampleStructuralIssues: Record<string, StructuralIssues> = {
     looseJoints: true, looseJointsNotes: 'Leg joints need regluing',
     pedalProblems: false, pedalProblemsNotes: '',
   },
+  p5: {
+    pianoId: 'p5',
+    soundboardCracks: false, soundboardCracksNotes: '',
+    bridgeSeparation: false, bridgeSeparationNotes: '',
+    looseTuningPins: true, looseTuningPinsNotes: 'Multiple pins in bass section',
+    rust: true, rustNotes: 'Moderate rust on strings',
+    waterDamage: false, waterDamageNotes: '',
+    actionWear: false, actionWearNotes: '',
+    looseJoints: false, looseJointsNotes: '',
+    pedalProblems: true, pedalProblemsNotes: 'Trapwork rod bent, spring missing',
+  },
 };
 
 export const sampleTasks: RenovationTask[] = [
@@ -170,6 +187,10 @@ export const sampleTasks: RenovationTask[] = [
   { id: 't2', pianoId: 'p1', phase: 'restoration_work', category: 'soundboard_repair', title: 'Soundboard crack repair', description: 'Fill and repair hairline cracks', assignee: 'Nick West', dueDate: '2026-05-01', status: 'in_progress', laborHours: 8, partsUsed: 'Epoxy filler', notes: 'Using traditional repair methods', completionDate: null, createdAt: '2026-02-15' },
   { id: 't3', pianoId: 'p4', phase: 'restoration_work', category: 'action_rebuild', title: 'Action regulation', description: 'Full action regulation and adjustment', assignee: 'David Park', dueDate: '2026-03-25', status: 'in_progress', laborHours: 6, partsUsed: '', notes: '', completionDate: null, createdAt: '2026-02-20' },
   { id: 't4', pianoId: 'p5', phase: 'awaiting_parts', category: 'string_replacement', title: 'Replace bass strings', description: 'Order and replace worn bass strings', assignee: 'Nick West', dueDate: '2026-04-15', status: 'blocked', laborHours: 0, partsUsed: '', notes: 'Waiting on custom bass strings order', completionDate: null, createdAt: '2026-02-01' },
+  { id: 't9', pianoId: 'p5', phase: 'awaiting_parts', category: 'pitch_raise', title: 'Pitch Raise', description: 'Required before regulation', assignee: 'Nick West', dueDate: null, status: 'todo', laborHours: 1.5, partsUsed: '', notes: 'Required before regulation', completionDate: null, createdAt: '2026-03-10' },
+  { id: 't10', pianoId: 'p5', phase: 'awaiting_parts', category: 'regulation', title: 'Regulation', description: 'Action geometry compromised', assignee: 'Nick West', dueDate: null, status: 'in_progress', laborHours: 4, partsUsed: 'Misc felts', notes: 'Action geometry compromised', completionDate: null, createdAt: '2026-03-10' },
+  { id: 't11', pianoId: 'p5', phase: 'awaiting_parts', category: 'pedal_repair', title: 'Pedal Repair', description: 'Trapwork rod and spring replacement', assignee: 'Nick West', dueDate: null, status: 'blocked', laborHours: 2, partsUsed: 'Trapwork rod, spring', notes: 'Ordered — ETA unknown', completionDate: null, createdAt: '2026-03-10' },
+  { id: 't12', pianoId: 'p5', phase: 'awaiting_parts', category: 'cleaning', title: 'Cleaning', description: 'Interior and cabinet cleaned', assignee: 'Nick West', dueDate: null, status: 'done', laborHours: 1, partsUsed: '', notes: 'Interior and cabinet cleaned', completionDate: '2026-03-10', createdAt: '2026-03-10' },
   { id: 't5', pianoId: 'p7', phase: 'restoration_work', category: 'cabinet_repair', title: 'Cabinet refinish', description: 'Sand and refinish cabinet for donation', assignee: 'Maria Chen', dueDate: '2026-04-01', status: 'in_progress', laborHours: 10, partsUsed: 'Lacquer, sandpaper', notes: '', completionDate: null, createdAt: '2026-02-10' },
   { id: 't6', pianoId: 'p8', phase: 'regulation', category: 'regulation', title: 'Full regulation', description: 'Complete action regulation for client piano', assignee: 'David Park', dueDate: '2026-03-20', status: 'in_progress', laborHours: 5, partsUsed: '', notes: 'Client wants medium-light touch', completionDate: null, createdAt: '2026-02-15' },
   { id: 't7', pianoId: 'p8', phase: 'regulation', category: 'voicing', title: 'Voicing', description: 'Voice hammers for warm tone', assignee: 'Nick West', dueDate: '2026-03-25', status: 'todo', laborHours: 0, partsUsed: '', notes: '', completionDate: null, createdAt: '2026-02-15' },
@@ -195,7 +216,7 @@ export const sampleBusinessCosts: Record<string, BusinessCostTracking> = {
   p2: { pianoId: 'p2', purchasePrice: 500, movingCost: 0, partsCost: 0, laborHours: 0, laborCost: 0, marketingCost: 0, totalInvestment: 500, estimatedSalePrice: null, projectedProfit: null, actualSalePrice: null },
   p3: { pianoId: 'p3', purchasePrice: 1200, movingCost: 450, partsCost: 0, laborHours: 0, laborCost: 0, marketingCost: 0, totalInvestment: 1650, estimatedSalePrice: 4500, projectedProfit: 2850, actualSalePrice: null },
   p4: { pianoId: 'p4', purchasePrice: 300, movingCost: 0, partsCost: 180, laborHours: 6, laborCost: 300, marketingCost: 0, totalInvestment: 780, estimatedSalePrice: 2000, projectedProfit: 1220, actualSalePrice: null },
-  p5: { pianoId: 'p5', purchasePrice: 800, movingCost: 150, partsCost: 0, laborHours: 0, laborCost: 0, marketingCost: 0, totalInvestment: 950, estimatedSalePrice: 3500, projectedProfit: 2550, actualSalePrice: null },
+  p5: { pianoId: 'p5', purchasePrice: 200, movingCost: 85, partsCost: 110, laborHours: 1, laborCost: 55, marketingCost: 0, totalInvestment: 450, estimatedSalePrice: 900, projectedProfit: 450, actualSalePrice: null },
   p6: { pianoId: 'p6', purchasePrice: 600, movingCost: 0, partsCost: 320, laborHours: 16, laborCost: 800, marketingCost: 0, totalInvestment: 1720, estimatedSalePrice: 2800, projectedProfit: 1080, actualSalePrice: null },
   p10: { pianoId: 'p10', purchasePrice: 400, movingCost: 350, partsCost: 0, laborHours: 0, laborCost: 0, marketingCost: 0, totalInvestment: 750, estimatedSalePrice: 1800, projectedProfit: 1050, actualSalePrice: null },
 };
@@ -234,6 +255,12 @@ export const sampleCharacterNotes: Record<string, CharacterNotes> = {
     cabinetCharacter: ['original_cabinet'],
     customShopNotes: 'Client wants warmer voicing and lighter touch.',
   },
+  p5: {
+    pianoId: 'p5', tonalCharacter: ['warm', 'rich_bass'],
+    actionFeel: ['heavy_action', 'needs_regulation'], musicalSuitability: ['home_practice', 'practice_instrument'],
+    cabinetCharacter: ['original_cabinet', 'period_antique'],
+    customShopNotes: 'Player mechanism adds significant parts and labor friction. Cap total investment or escalate to Diamond decision with full player rebuild justification. Strong cabinet. Bass is surprisingly alive.',
+  },
 };
 
 export const samplePerformanceProfiles: Record<string, PerformanceProfile> = {
@@ -246,6 +273,11 @@ export const samplePerformanceProfiles: Record<string, PerformanceProfile> = {
     pianoId: 'p8', pitchLevel: 'A438 (low)', lastTuningDate: '2025-12-01',
     pitchRaiseRequired: true, regulationStatus: 'In Progress', voicingStatus: 'Pending',
     humiditySensitivity: 'Moderate',
+  },
+  p5: {
+    pianoId: 'p5', pitchLevel: 'A440 ±15¢', lastTuningDate: null,
+    pitchRaiseRequired: true, regulationStatus: 'Needed', voicingStatus: 'Needed',
+    humiditySensitivity: 'Moderate sensitivity',
   },
 };
 

@@ -28,6 +28,10 @@ export type ExpenseCategory =
 
 export type ConditionScore = 1 | 2 | 3 | 4 | 5;
 
+export type RoiHealth = 'strong' | 'moderate' | 'watch' | 'mission' | 'client' | 'archive';
+
+export type FrictionScore = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
 export type UserRole = 'admin' | 'contributor' | 'viewer';
 
 export type TaskCategory =
@@ -79,6 +83,8 @@ export interface Piano {
   tags: string[];
   privateNotes: string;
   percentComplete: number;
+  frictionScore: FrictionScore | null;
+  roiHealth: RoiHealth;
   createdAt: string;
   updatedAt: string;
 }
@@ -382,4 +388,18 @@ export const CABINET_CHARACTER_LABELS: Record<CabinetCharacter, string> = {
   high_gloss: 'High Gloss', satin_finish: 'Satin Finish', original_cabinet: 'Original Cabinet',
   refinished_cabinet: 'Refinished Cabinet', art_case: 'Art Case', decorative_carving: 'Decorative Carving',
   period_antique: 'Period Antique', modern_cabinet: 'Modern Cabinet',
+};
+
+export const ROI_HEALTH_LABELS: Record<RoiHealth, string> = {
+  strong: 'Strong', moderate: 'Moderate', watch: 'Watch',
+  mission: 'Mission', client: 'Client', archive: 'Archive',
+};
+
+export const ROI_HEALTH_COLORS: Record<RoiHealth, string> = {
+  strong: 'bg-success/15 text-success',
+  moderate: 'bg-warning/15 text-warning',
+  watch: 'bg-destructive/15 text-destructive',
+  mission: 'bg-purple-100 text-purple-700',
+  client: 'bg-info/15 text-info',
+  archive: 'bg-muted text-muted-foreground',
 };
