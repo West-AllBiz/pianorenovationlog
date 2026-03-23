@@ -389,3 +389,17 @@ export const CABINET_CHARACTER_LABELS: Record<CabinetCharacter, string> = {
   refinished_cabinet: 'Refinished Cabinet', art_case: 'Art Case', decorative_carving: 'Decorative Carving',
   period_antique: 'Period Antique', modern_cabinet: 'Modern Cabinet',
 };
+
+export const ROI_HEALTH_LABELS: Record<RoiHealth, string> = {
+  strong: 'Strong', moderate: 'Moderate', watch: 'Watch',
+  mission: 'Mission', client: 'Client', archive: 'Archive',
+};
+
+export const ROI_HEALTH_COLORS: Record<RoiHealth, string> = {
+  strong: 'bg-success/15 text-success',
+  moderate: 'bg-warning/15 text-warning',
+  watch: 'bg-destructive/15 text-destructive',
+  mission: 'bg-purple-100 text-purple-700',
+  client: 'bg-info/15 text-info',
+  archive: 'bg-muted text-muted-foreground',
+};
