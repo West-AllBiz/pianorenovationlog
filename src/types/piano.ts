@@ -83,6 +83,8 @@ export interface Piano {
   tags: string[];
   privateNotes: string;
   percentComplete: number;
+  frictionScore: FrictionScore | null;
+  roiHealth: RoiHealth;
   createdAt: string;
   updatedAt: string;
 }
