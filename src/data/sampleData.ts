@@ -169,6 +169,17 @@ export const sampleStructuralIssues: Record<string, StructuralIssues> = {
     looseJoints: true, looseJointsNotes: 'Leg joints need regluing',
     pedalProblems: false, pedalProblemsNotes: '',
   },
+  p5: {
+    pianoId: 'p5',
+    soundboardCracks: false, soundboardCracksNotes: '',
+    bridgeSeparation: false, bridgeSeparationNotes: '',
+    looseTuningPins: true, looseTuningPinsNotes: 'Multiple pins in bass section',
+    rust: true, rustNotes: 'Moderate rust on strings',
+    waterDamage: false, waterDamageNotes: '',
+    actionWear: false, actionWearNotes: '',
+    looseJoints: false, looseJointsNotes: '',
+    pedalProblems: true, pedalProblemsNotes: 'Trapwork rod bent, spring missing',
+  },
 };
 
 export const sampleTasks: RenovationTask[] = [
