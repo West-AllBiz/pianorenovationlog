@@ -87,7 +87,7 @@ export const samplePianos: Piano[] = [
     transportCompany: '', status: 'restoration_work', askingPrice: null, soldPrice: null,
     soldDate: null, buyerName: null, buyerContact: null,
     tags: ['donation', 'artist'], privateNotes: 'Artist donation piano',
-    percentComplete: 40, createdAt: '2026-01-20', updatedAt: '2026-03-10',
+    percentComplete: 40, frictionScore: 5, roiHealth: 'mission', createdAt: '2026-01-20', updatedAt: '2026-03-10',
   },
   {
     id: 'p8', inventoryId: 'P-008', tag: 'Tag 8', colorTag: 'purple',
