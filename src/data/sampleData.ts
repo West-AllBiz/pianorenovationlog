@@ -216,7 +216,7 @@ export const sampleBusinessCosts: Record<string, BusinessCostTracking> = {
   p2: { pianoId: 'p2', purchasePrice: 500, movingCost: 0, partsCost: 0, laborHours: 0, laborCost: 0, marketingCost: 0, totalInvestment: 500, estimatedSalePrice: null, projectedProfit: null, actualSalePrice: null },
   p3: { pianoId: 'p3', purchasePrice: 1200, movingCost: 450, partsCost: 0, laborHours: 0, laborCost: 0, marketingCost: 0, totalInvestment: 1650, estimatedSalePrice: 4500, projectedProfit: 2850, actualSalePrice: null },
   p4: { pianoId: 'p4', purchasePrice: 300, movingCost: 0, partsCost: 180, laborHours: 6, laborCost: 300, marketingCost: 0, totalInvestment: 780, estimatedSalePrice: 2000, projectedProfit: 1220, actualSalePrice: null },
-  p5: { pianoId: 'p5', purchasePrice: 800, movingCost: 150, partsCost: 0, laborHours: 0, laborCost: 0, marketingCost: 0, totalInvestment: 950, estimatedSalePrice: 3500, projectedProfit: 2550, actualSalePrice: null },
+  p5: { pianoId: 'p5', purchasePrice: 200, movingCost: 85, partsCost: 110, laborHours: 1, laborCost: 55, marketingCost: 0, totalInvestment: 450, estimatedSalePrice: 900, projectedProfit: 450, actualSalePrice: null },
   p6: { pianoId: 'p6', purchasePrice: 600, movingCost: 0, partsCost: 320, laborHours: 16, laborCost: 800, marketingCost: 0, totalInvestment: 1720, estimatedSalePrice: 2800, projectedProfit: 1080, actualSalePrice: null },
   p10: { pianoId: 'p10', purchasePrice: 400, movingCost: 350, partsCost: 0, laborHours: 0, laborCost: 0, marketingCost: 0, totalInvestment: 750, estimatedSalePrice: 1800, projectedProfit: 1050, actualSalePrice: null },
 };
