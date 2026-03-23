@@ -28,6 +28,10 @@ export type ExpenseCategory =
 
 export type ConditionScore = 1 | 2 | 3 | 4 | 5;
 
+export type RoiHealth = 'strong' | 'moderate' | 'watch' | 'mission' | 'client' | 'archive';
+
+export type FrictionScore = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
 export type UserRole = 'admin' | 'contributor' | 'viewer';
 
 export type TaskCategory =
