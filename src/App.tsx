@@ -13,6 +13,7 @@ import CalendarPage from "./pages/CalendarPage";
 import Reports from "./pages/Reports";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/SettingsPage";
+import AcquisitionTriage from "./pages/AcquisitionTriage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/inventory" element={<Inventory />} />
+            <Route path="/triage" element={<AcquisitionTriage />} />
             <Route path="/piano/:id" element={<PianoDetail />} />
             <Route path="/renovation" element={<RenovationBoard />} />
             <Route path="/calendar" element={<CalendarPage />} />
