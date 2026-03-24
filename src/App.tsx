@@ -13,6 +13,7 @@ import CalendarPage from "./pages/CalendarPage";
 import Reports from "./pages/Reports";
 import Team from "./pages/Team";
 import SettingsPage from "./pages/SettingsPage";
+import AcquisitionTriage from "./pages/AcquisitionTriage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
