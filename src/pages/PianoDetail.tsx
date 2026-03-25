@@ -1,22 +1,25 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { ArrowLeft, Edit, Check, X, Pencil, Plus, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  samplePianos, sampleInspections, sampleStructuralIssues, sampleTasks, sampleExpenses,
-  sampleSales, sampleActivity, sampleBusinessCosts, sampleClientJobs, sampleDonations,
-  sampleCharacterNotes, samplePerformanceProfiles
-} from '@/data/sampleData';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { usePiano, usePianoRelated, useUpdatePiano, useLogActivity } from '@/hooks/usePianos';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from '@/hooks/use-toast';
 import {
   STATUS_LABELS, STATUS_COLORS, PIANO_TYPE_LABELS, OWNERSHIP_LABELS,
-  COLOR_TAG_HEX, CONDITION_SCORE_LABELS, TASK_CATEGORY_LABELS,
+  COLOR_TAG_HEX, COLOR_TAG_LABELS, CONDITION_SCORE_LABELS, TASK_CATEGORY_LABELS,
   TONAL_CHARACTER_LABELS, ACTION_FEEL_LABELS, MUSICAL_SUITABILITY_LABELS, CABINET_CHARACTER_LABELS,
   ROI_HEALTH_LABELS, ROI_HEALTH_COLORS,
-  type ConditionScore, type RoiHealth
+  type PianoStatus, type OwnershipCategory, type ColorTag, type RoiHealth, type PianoType,
+  type ConditionScore, type TaskCategory,
 } from '@/types/piano';
-
-// ── Helpers ──────────────────────────────────────────────
 
 const TABS = ['Overview', 'Intake', 'Restoration', 'Expenses', 'Character Notes', 'Activity'] as const;
 
@@ -26,29 +29,79 @@ const TASK_STATUS_STYLES: Record<string, string> = {
   todo: 'bg-muted text-muted-foreground',
   blocked: 'bg-destructive/15 text-destructive',
 };
-
 const TASK_STATUS_DISPLAY: Record<string, string> = {
-  done: 'Complete',
-  in_progress: 'In Progress',
-  todo: 'Pending',
-  blocked: 'Awaiting Parts',
+  done: 'Complete', in_progress: 'In Progress', todo: 'Pending', blocked: 'Awaiting Parts',
 };
 
-// ── Sub-components ───────────────────────────────────────
+// ── Inline Edit Field ────────────────────────────────────
+function InlineField({ label, value, onSave, type = 'text', options, canEdit: editable = true }: {
+  label: string; value: string; onSave: (val: string) => void;
+  type?: 'text' | 'select' | 'textarea'; options?: Record<string, string>; canEdit?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const save = () => {
+    if (draft !== value) onSave(draft);
+    setEditing(false);
+  };
+  const cancel = () => { setDraft(value); setEditing(false); };
+
+  if (!editing) {
+    return (
+      <div className="flex justify-between py-2 border-b group">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium">{options ? options[value] || value : value || '—'}</span>
+          {editable && (
+            <button onClick={() => { setDraft(value); setEditing(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+              <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'select' && options) {
+    return (
+      <div className="flex justify-between py-2 border-b items-center">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <div className="flex items-center gap-1">
+          <Select value={draft} onValueChange={v => { setDraft(v); }}>
+            <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>{Object.entries(options).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+          </Select>
+          <button onClick={save} className="p-1 hover:bg-success/10 rounded"><Check className="h-3.5 w-3.5 text-success" /></button>
+          <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded"><X className="h-3.5 w-3.5 text-destructive" /></button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex justify-between py-2 border-b items-center gap-2">
+      <span className="text-sm text-muted-foreground shrink-0">{label}</span>
+      <div className="flex items-center gap-1">
+        {type === 'textarea' ? (
+          <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="text-sm h-20" onKeyDown={e => { if (e.key === 'Escape') cancel(); }} />
+        ) : (
+          <Input value={draft} onChange={e => setDraft(e.target.value)} className="h-8 text-sm w-40"
+            onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }} autoFocus />
+        )}
+        <button onClick={save} className="p-1 hover:bg-success/10 rounded"><Check className="h-3.5 w-3.5 text-success" /></button>
+        <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded"><X className="h-3.5 w-3.5 text-destructive" /></button>
+      </div>
+    </div>
+  );
+}
 
 function FrictionDots({ score }: { score: number }) {
   return (
     <div className="flex items-center gap-3">
       <div className="flex gap-1">
         {Array.from({ length: 10 }, (_, i) => (
-          <div
-            key={i}
-            className={`w-2.5 h-2.5 rounded-full transition-colors ${
-              i < score
-                ? score >= 7 ? 'bg-destructive' : score >= 4 ? 'bg-warning' : 'bg-success'
-                : 'bg-border'
-            }`}
-          />
+          <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors ${i < score ? score >= 7 ? 'bg-destructive' : score >= 4 ? 'bg-warning' : 'bg-success' : 'bg-border'}`} />
         ))}
       </div>
       <span className="text-sm font-mono text-muted-foreground">{score}/10</span>
@@ -56,76 +109,116 @@ function FrictionDots({ score }: { score: number }) {
   );
 }
 
-function ScoreBar({ label, value }: { label: string; value: ConditionScore }) {
+function ScoreBar({ label, value, onSave, canEdit: editable }: { label: string; value: number; onSave?: (v: number) => void; canEdit?: boolean }) {
+  const [editing, setEditing] = useState(false);
   const colorClass = value >= 4 ? 'bg-success' : value === 3 ? 'bg-warning' : 'bg-destructive';
+
+  if (editing && editable && onSave) {
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-sm text-muted-foreground w-24 flex-shrink-0">{label}</span>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map(v => (
+            <button key={v} onClick={() => { onSave(v); setEditing(false); }}
+              className={`w-7 h-7 rounded text-xs font-mono border ${v === value ? 'bg-primary/20 border-primary text-primary' : 'bg-muted/50 border-border text-muted-foreground hover:bg-accent'}`}
+            >{v}</button>
+          ))}
+        </div>
+        <button onClick={() => setEditing(false)}><X className="h-3.5 w-3.5 text-muted-foreground" /></button>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 group cursor-pointer" onClick={() => editable && setEditing(true)}>
       <span className="text-sm text-muted-foreground w-24 flex-shrink-0">{label}</span>
       <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
         <div className={`h-full rounded-full ${colorClass}`} style={{ width: `${(value / 5) * 100}%` }} />
       </div>
       <span className="text-xs font-mono text-muted-foreground w-4 text-right">{value}</span>
+      {editable && <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
     </div>
-  );
-}
-
-function Tag({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={`status-badge ${className || 'bg-primary/10 text-primary'}`}>
-      {children}
-    </span>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-6">
-      <h3 className="font-heading font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-3 pb-2 border-b">
-        {title}
-      </h3>
+      <h3 className="font-heading font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-3 pb-2 border-b">{title}</h3>
       {children}
     </div>
   );
 }
 
-// ── Main Component ───────────────────────────────────────
+function Tag({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <span className={`status-badge ${className || 'bg-primary/10 text-primary'}`}>{children}</span>;
+}
 
+// ── Main Component ───────────────────────────────────────
 export default function PianoDetail() {
   const { id } = useParams<{ id: string }>();
-  const piano = samplePianos.find(p => p.id === id);
+  const { data: piano, isLoading } = usePiano(id);
+  const related = usePianoRelated(id);
+  const updatePiano = useUpdatePiano();
+  const logActivity = useLogActivity();
+  const { canEdit, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<typeof TABS[number]>('Overview');
+  const qc = useQueryClient();
 
-  const inspection = id ? sampleInspections[id] : undefined;
-  const structuralIssues = id ? sampleStructuralIssues[id] : undefined;
-  const tasks = sampleTasks.filter(t => t.pianoId === id);
-  const expenses = sampleExpenses.filter(e => e.pianoId === id);
-  const sale = id ? sampleSales[id] : undefined;
-  const activity = sampleActivity.filter(a => a.pianoId === id);
-  const businessCost = id ? sampleBusinessCosts[id] : undefined;
-  const clientJob = id ? sampleClientJobs[id] : undefined;
-  const donation = id ? sampleDonations[id] : undefined;
-  const characterNotes = id ? sampleCharacterNotes[id] : undefined;
-  const performanceProfile = id ? samplePerformanceProfiles[id] : undefined;
+  if (isLoading) return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (!piano) return (
+    <div className="p-8 text-center">
+      <p className="text-muted-foreground">Piano not found</p>
+      <Link to="/inventory" className="text-primary hover:underline text-sm mt-2 inline-block">Back to inventory</Link>
+    </div>
+  );
 
-  const expenseTotal = expenses.reduce((s, e) => s + e.amount, 0);
-  const expenseByCategory = useMemo(() => {
-    const map: Record<string, number> = {};
-    expenses.forEach(e => { map[e.category] = (map[e.category] || 0) + e.amount; });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [expenses]);
+  const handleFieldUpdate = (field: string, value: any, oldValue?: any) => {
+    updatePiano.mutate({
+      id: piano.id,
+      updates: { [field]: value },
+      fieldName: field,
+      oldValue: String(oldValue ?? ''),
+      newValue: String(value),
+    });
+  };
 
-  if (!piano) {
-    return (
-      <div className="p-8 text-center">
-        <p className="text-muted-foreground">Piano not found</p>
-        <Link to="/inventory" className="text-primary hover:underline text-sm mt-2 inline-block">Back to inventory</Link>
-      </div>
-    );
-  }
+  const inspection = related.inspection.data;
+  const tasks = related.tasks.data ?? [];
+  const expenses = related.expenses.data;
+  const clientRecord = related.clientRecord.data;
+  const donationRecord = related.donationRecord.data;
+  const characterNotes = related.characterNotes.data;
+  const performanceProfile = related.performanceProfile.data;
+  const activityLog = related.activityLog.data ?? [];
+
+  const handleConditionUpdate = async (field: string, value: number) => {
+    if (!inspection) return;
+    const { error } = await supabase.from('condition_inspections').update({ [field]: value }).eq('id', inspection.id);
+    if (error) { toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' }); return; }
+    qc.invalidateQueries({ queryKey: ['inspection', piano.id] });
+    logActivity(piano.id, `Updated condition ${field}`, field, String(inspection[field as keyof typeof inspection]), String(value));
+    toast({ title: 'Saved' });
+  };
+
+  const handleIssueToggle = async (field: string) => {
+    if (!inspection) return;
+    const newVal = !inspection[field as keyof typeof inspection];
+    const { error } = await supabase.from('condition_inspections').update({ [field]: newVal }).eq('id', inspection.id);
+    if (error) { toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' }); return; }
+    qc.invalidateQueries({ queryKey: ['inspection', piano.id] });
+    logActivity(piano.id, `${newVal ? 'Flagged' : 'Cleared'} ${field.replace(/_/g, ' ')}`);
+    toast({ title: 'Saved' });
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
-      {/* Header */}
+      {!canEdit && (
+        <div className="mb-4 p-3 bg-muted/50 border rounded-lg text-sm text-muted-foreground">
+          You have view-only access. Contact an admin to request edit permissions.
+        </div>
+      )}
+
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <Link to="/inventory" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
           <ArrowLeft className="h-4 w-4" /> Back to inventory
@@ -134,39 +227,56 @@ export default function PianoDetail() {
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
           <div>
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLOR_TAG_HEX[piano.colorTag] }} />
-              <span className="text-sm font-mono text-muted-foreground">{piano.inventoryId}</span>
+              {piano.color_tag && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLOR_TAG_HEX[piano.color_tag as ColorTag] || '#94a3b8' }} />}
+              <span className="text-sm font-mono text-muted-foreground">{piano.inventory_id}</span>
             </div>
             <h1 className="font-heading text-2xl sm:text-3xl font-bold">{piano.brand} {piano.model}</h1>
             <p className="text-muted-foreground font-mono text-sm">
-              {piano.inventoryId} · {PIANO_TYPE_LABELS[piano.pianoType]} · #{piano.serialNumber}
+              {piano.inventory_id} · {PIANO_TYPE_LABELS[piano.piano_type as PianoType] || piano.piano_type} · #{piano.serial_number || '—'}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`status-badge ${STATUS_COLORS[piano.status]}`}>{STATUS_LABELS[piano.status]}</span>
-            <span className={`status-badge ${ROI_HEALTH_COLORS[piano.roiHealth]}`}>{ROI_HEALTH_LABELS[piano.roiHealth]} ROI</span>
-            <Button variant="outline" size="sm"><Edit className="h-4 w-4 mr-1.5" /> Edit</Button>
+            {canEdit ? (
+              <Select value={piano.status} onValueChange={v => handleFieldUpdate('status', v, piano.status)}>
+                <SelectTrigger className={`h-8 w-auto text-xs status-badge ${STATUS_COLORS[piano.status as PianoStatus] || ''}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className={`status-badge ${STATUS_COLORS[piano.status as PianoStatus] || ''}`}>{STATUS_LABELS[piano.status as PianoStatus] || piano.status}</span>
+            )}
+            {canEdit ? (
+              <Select value={piano.roi_health || 'moderate'} onValueChange={v => handleFieldUpdate('roi_health', v, piano.roi_health)}>
+                <SelectTrigger className={`h-8 w-auto text-xs status-badge ${ROI_HEALTH_COLORS[(piano.roi_health || 'moderate') as RoiHealth] || ''}`}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ROI_HEALTH_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v} ROI</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <span className={`status-badge ${ROI_HEALTH_COLORS[(piano.roi_health || 'moderate') as RoiHealth] || ''}`}>{ROI_HEALTH_LABELS[(piano.roi_health || 'moderate') as RoiHealth]} ROI</span>
+            )}
           </div>
         </div>
 
-        {/* Friction Alert */}
-        {piano.frictionScore && piano.frictionScore >= 7 && (
+        {piano.friction_score && piano.friction_score >= 7 && (
           <div className="mb-4 p-3 bg-destructive/5 border border-destructive/20 rounded-lg flex items-start gap-2">
             <span className="text-destructive text-lg">⚠</span>
-            <p className="text-sm text-foreground">
-              <span className="font-semibold">High friction instrument</span> · Score {piano.frictionScore}/10 · Cap investment before committing further scope.
-            </p>
+            <p className="text-sm"><span className="font-semibold">High friction instrument</span> · Score {piano.friction_score}/10 · Cap investment before committing further scope.</p>
           </div>
         )}
 
-        {/* Progress bar */}
         <div className="mb-6 p-4 bg-card rounded-lg border">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Restoration Progress</span>
-            <span className="text-sm font-bold font-mono">{piano.percentComplete}%</span>
+            <span className="text-sm font-bold font-mono">{piano.percent_complete || 0}%</span>
           </div>
           <div className="w-full h-2 bg-muted rounded-full">
-            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${piano.percentComplete}%` }} />
+            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${piano.percent_complete || 0}%` }} />
           </div>
         </div>
       </motion.div>
@@ -175,47 +285,421 @@ export default function PianoDetail() {
       <div className="border-b mb-6 -mx-4 sm:mx-0 overflow-x-auto">
         <div className="flex min-w-max px-4 sm:px-0">
           {TABS.map(t => (
-            <button
-              key={t}
-              onClick={() => setActiveTab(t)}
-              className={`px-4 py-3 text-xs font-mono font-medium border-b-2 transition-colors whitespace-nowrap touch-target ${
-                activeTab === t
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t}
-            </button>
+            <button key={t} onClick={() => setActiveTab(t)}
+              className={`px-4 py-3 text-xs font-mono font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+            >{t}</button>
           ))}
         </div>
       </div>
 
-      {/* Tab Content */}
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-        {activeTab === 'Overview' && <OverviewTab piano={piano} performanceProfile={performanceProfile} />}
-        {activeTab === 'Intake' && <IntakeTab piano={piano} inspection={inspection} structuralIssues={structuralIssues} />}
-        {activeTab === 'Restoration' && <RestorationTab tasks={tasks} performanceProfile={performanceProfile} />}
-        {activeTab === 'Expenses' && <ExpensesTab businessCost={businessCost} clientJob={clientJob} donation={donation} sale={sale} expenses={expenses} expenseTotal={expenseTotal} expenseByCategory={expenseByCategory} />}
-        {activeTab === 'Character Notes' && <CharacterTab characterNotes={characterNotes} />}
-        {activeTab === 'Activity' && <ActivityTab activity={activity} />}
+        {activeTab === 'Overview' && (
+          <div className="space-y-0">
+            <Section title="Piano Details">
+              <div className="grid sm:grid-cols-2 gap-x-6">
+                <InlineField label="Brand" value={piano.brand} onSave={v => handleFieldUpdate('brand', v, piano.brand)} canEdit={canEdit} />
+                <InlineField label="Model" value={piano.model || ''} onSave={v => handleFieldUpdate('model', v, piano.model)} canEdit={canEdit} />
+                <InlineField label="Serial" value={piano.serial_number || ''} onSave={v => handleFieldUpdate('serial_number', v, piano.serial_number)} canEdit={canEdit} />
+                <InlineField label="Type" value={piano.piano_type} type="select" options={PIANO_TYPE_LABELS} onSave={v => handleFieldUpdate('piano_type', v, piano.piano_type)} canEdit={canEdit} />
+                <InlineField label="Finish" value={piano.finish || ''} onSave={v => handleFieldUpdate('finish', v, piano.finish)} canEdit={canEdit} />
+                <InlineField label="Year Built" value={piano.year_built || ''} onSave={v => handleFieldUpdate('year_built', v, piano.year_built)} canEdit={canEdit} />
+                <InlineField label="Country" value={piano.country_of_origin || ''} onSave={v => handleFieldUpdate('country_of_origin', v, piano.country_of_origin)} canEdit={canEdit} />
+                <InlineField label="Color Tag" value={piano.color_tag || ''} type="select" options={COLOR_TAG_LABELS} onSave={v => handleFieldUpdate('color_tag', v, piano.color_tag)} canEdit={canEdit} />
+              </div>
+            </Section>
+
+            {piano.friction_score != null && (
+              <Section title="Friction Score">
+                <FrictionDots score={piano.friction_score} />
+                {canEdit && (
+                  <div className="mt-2">
+                    <InlineField label="Score (1-10)" value={String(piano.friction_score)} onSave={v => handleFieldUpdate('friction_score', parseInt(v) || piano.friction_score, piano.friction_score)} canEdit={canEdit} />
+                  </div>
+                )}
+              </Section>
+            )}
+
+            <Section title="ROI Health">
+              <div className="flex items-center gap-3">
+                <span className={`status-badge text-sm ${ROI_HEALTH_COLORS[(piano.roi_health || 'moderate') as RoiHealth] || ''}`}>
+                  {ROI_HEALTH_LABELS[(piano.roi_health || 'moderate') as RoiHealth]}
+                </span>
+              </div>
+            </Section>
+
+            {piano.private_notes && (
+              <Section title="Private Notes">
+                {canEdit ? (
+                  <EditableTextarea value={piano.private_notes} onSave={v => handleFieldUpdate('private_notes', v, piano.private_notes)} />
+                ) : (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{piano.private_notes}</p>
+                )}
+              </Section>
+            )}
+
+            {performanceProfile && (
+              <Section title="Performance Profile">
+                <div className="grid sm:grid-cols-2 gap-x-6">
+                  {[
+                    ['Pitch Level', performanceProfile.pitch_level],
+                    ['Last Tuning', performanceProfile.last_tuning_date || '—'],
+                    ['Pitch Raise Required', performanceProfile.pitch_raise_required ? 'Required' : 'Not required'],
+                    ['Regulation Status', performanceProfile.regulation_status],
+                    ['Voicing Status', performanceProfile.voicing_status],
+                    ['Humidity Sensitivity', performanceProfile.humidity_sensitivity],
+                  ].map(([label, value]) => (
+                    <div key={label as string} className="flex justify-between py-2 border-b">
+                      <span className="text-sm text-muted-foreground">{label as string}</span>
+                      <span className="text-sm font-medium">{(value as string) || '—'}</span>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'Intake' && (
+          <div className="space-y-0">
+            {inspection ? (
+              <>
+                <Section title="Condition Scores (1–5)">
+                  <div className="space-y-2.5">
+                    {(['soundboard', 'bridges', 'pinblock', 'strings', 'tuning_pins', 'action', 'hammers', 'dampers', 'keytops', 'pedals', 'trapwork', 'cabinet', 'casters'] as const).map(field => (
+                      <ScoreBar key={field} label={field.replace(/_/g, ' ')} value={(inspection[field] as number) || 3}
+                        onSave={v => handleConditionUpdate(field, v)} canEdit={canEdit} />
+                    ))}
+                  </div>
+                  <div className="mt-4 pt-3 border-t">
+                    <p className="text-sm text-muted-foreground">
+                      Overall avg: <span className="font-mono font-semibold text-foreground">
+                        {((['soundboard', 'bridges', 'pinblock', 'strings', 'tuning_pins', 'action', 'hammers', 'dampers', 'keytops', 'pedals', 'trapwork', 'cabinet', 'casters'] as const)
+                          .reduce((s, f) => s + ((inspection[f] as number) || 3), 0) / 13).toFixed(1)}
+                      </span> / 5
+                    </p>
+                  </div>
+                </Section>
+
+                <Section title="Structural Issues">
+                  <div className="grid sm:grid-cols-2 gap-2">
+                    {[
+                      { key: 'soundboard_cracks', label: 'Soundboard cracks' },
+                      { key: 'bridge_separation', label: 'Bridge separation' },
+                      { key: 'loose_tuning_pins', label: 'Loose tuning pins' },
+                      { key: 'rust', label: 'Rust' },
+                      { key: 'water_damage', label: 'Water damage' },
+                      { key: 'action_wear', label: 'Action wear' },
+                      { key: 'loose_joints', label: 'Loose joints' },
+                      { key: 'pedal_problems', label: 'Pedal problems' },
+                    ].map(({ key, label }) => {
+                      const present = inspection[key as keyof typeof inspection] as boolean;
+                      return (
+                        <button key={key} disabled={!canEdit}
+                          onClick={() => canEdit && handleIssueToggle(key)}
+                          className={`flex items-center gap-2 py-2 px-3 rounded border text-sm transition-colors ${present ? 'bg-destructive/5 border-destructive/20' : 'bg-card'} ${canEdit ? 'cursor-pointer hover:opacity-80' : ''}`}
+                        >
+                          <div className={`w-2 h-2 rounded-full ${present ? 'bg-destructive' : 'bg-success'}`} />
+                          <span>{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </Section>
+              </>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>No inspection report yet</p>
+              </div>
+            )}
+
+            <Section title="Source & Ownership">
+              <div className="flex flex-wrap gap-2">
+                <Tag>{OWNERSHIP_LABELS[piano.ownership_category as OwnershipCategory] || piano.ownership_category}</Tag>
+                <Tag className="bg-secondary text-secondary-foreground">Source: {(piano.source || '').replace(/_/g, ' ')}</Tag>
+              </div>
+            </Section>
+          </div>
+        )}
+
+        {activeTab === 'Restoration' && (
+          <RestorationContent pianoId={piano.id} tasks={tasks} performanceProfile={performanceProfile} canEdit={canEdit} />
+        )}
+
+        {activeTab === 'Expenses' && (
+          <ExpensesContent pianoId={piano.id} expenses={expenses} clientRecord={clientRecord} donationRecord={donationRecord} canEdit={canEdit} />
+        )}
+
+        {activeTab === 'Character Notes' && (
+          <CharacterContent pianoId={piano.id} characterNotes={characterNotes} canEdit={canEdit} />
+        )}
+
+        {activeTab === 'Activity' && (
+          <Section title="Activity Log">
+            {activityLog.length > 0 ? (
+              <div className="space-y-3">
+                {activityLog.map((a: any) => (
+                  <div key={a.id} className="flex gap-3 py-2 border-b last:border-0">
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                      {(a.user_name || '?').split(' ').map((n: string) => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground font-mono">
+                        {new Date(a.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · {a.user_name}
+                      </p>
+                      <p className="text-sm">{a.action_description}</p>
+                      {a.old_value && a.new_value && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{a.changed_field}: {a.old_value} → {a.new_value}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-12 text-muted-foreground">No activity recorded yet</p>
+            )}
+          </Section>
+        )}
       </motion.div>
     </div>
   );
 }
 
-// ── Overview Tab ─────────────────────────────────────────
+// ── Editable Textarea ────────────────────────────────────
+function EditableTextarea({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
 
-function OverviewTab({ piano, performanceProfile }: { piano: any; performanceProfile: any }) {
+  if (!editing) {
+    return (
+      <div className="group cursor-pointer" onClick={() => { setDraft(value); setEditing(true); }}>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{value}</p>
+        <p className="text-xs text-muted-foreground/50 mt-1 opacity-0 group-hover:opacity-100">Click to edit</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Textarea value={draft} onChange={e => setDraft(e.target.value)} rows={6} className="text-sm" autoFocus />
+      <div className="flex gap-2 mt-2">
+        <Button size="sm" onClick={() => { onSave(draft); setEditing(false); }}>Save</Button>
+        <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Restoration Content ──────────────────────────────────
+function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: editable }: {
+  pianoId: string; tasks: any[]; performanceProfile: any; canEdit: boolean;
+}) {
+  const [addingTask, setAddingTask] = useState(false);
+  const [newTask, setNewTask] = useState({ title: '', category: 'other', assignee: '', status: 'todo', labor_hours: '0', parts_used: '', notes: '' });
+  const qc = useQueryClient();
+  const { user, profile } = useAuth();
+
+  const handleAddTask = async () => {
+    if (!user || !newTask.title.trim()) return;
+    const { error } = await supabase.from('restoration_tasks').insert({
+      piano_id: pianoId, title: newTask.title, category: newTask.category,
+      assignee: newTask.assignee || null, status: newTask.status,
+      labor_hours: parseFloat(newTask.labor_hours) || 0,
+      parts_used: newTask.parts_used, notes: newTask.notes, created_by: user.id,
+    });
+    if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+    await supabase.from('activity_log').insert({
+      piano_id: pianoId, user_id: user.id, user_name: profile?.full_name || user.email || '',
+      action_description: `Added task: ${newTask.title}`,
+    });
+    qc.invalidateQueries({ queryKey: ['tasks', pianoId] });
+    qc.invalidateQueries({ queryKey: ['activity_log', pianoId] });
+    setAddingTask(false);
+    setNewTask({ title: '', category: 'other', assignee: '', status: 'todo', labor_hours: '0', parts_used: '', notes: '' });
+    toast({ title: 'Task added' });
+  };
+
+  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
+    if (!confirm(`Delete task "${taskTitle}"?`)) return;
+    await supabase.from('restoration_tasks').delete().eq('id', taskId);
+    qc.invalidateQueries({ queryKey: ['tasks', pianoId] });
+    toast({ title: 'Task deleted' });
+  };
+
+  const handleUpdateTask = async (taskId: string, updates: Record<string, any>) => {
+    await supabase.from('restoration_tasks').update(updates).eq('id', taskId);
+    qc.invalidateQueries({ queryKey: ['tasks', pianoId] });
+    toast({ title: 'Saved' });
+  };
+
   return (
     <div className="space-y-0">
-      <Section title="Piano Details">
+      <Section title="Restoration Tasks">
+        {editable && (
+          <div className="mb-4">
+            {!addingTask ? (
+              <Button size="sm" variant="outline" onClick={() => setAddingTask(true)}><Plus className="h-4 w-4 mr-1" /> Add Task</Button>
+            ) : (
+              <div className="p-4 bg-card rounded-lg border space-y-3">
+                <Input placeholder="Task name" value={newTask.title} onChange={e => setNewTask(t => ({ ...t, title: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Select value={newTask.category} onValueChange={v => setNewTask(t => ({ ...t, category: v }))}>
+                    <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>{Object.entries(TASK_CATEGORY_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <Input placeholder="Assignee" value={newTask.assignee} onChange={e => setNewTask(t => ({ ...t, assignee: e.target.value }))} />
+                  <Select value={newTask.status} onValueChange={v => setNewTask(t => ({ ...t, status: v }))}>
+                    <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todo">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="blocked">Awaiting Parts</SelectItem>
+                      <SelectItem value="done">Complete</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input type="number" placeholder="Hours" value={newTask.labor_hours} onChange={e => setNewTask(t => ({ ...t, labor_hours: e.target.value }))} />
+                </div>
+                <Input placeholder="Parts used" value={newTask.parts_used} onChange={e => setNewTask(t => ({ ...t, parts_used: e.target.value }))} />
+                <Textarea placeholder="Notes" value={newTask.notes} onChange={e => setNewTask(t => ({ ...t, notes: e.target.value }))} rows={2} />
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleAddTask} disabled={!newTask.title.trim()}>Save Task</Button>
+                  <Button size="sm" variant="outline" onClick={() => setAddingTask(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tasks.length > 0 ? (
+          <div className="space-y-2">
+            {tasks.map((t: any) => (
+              <div key={t.id} className="p-4 bg-card rounded-lg border">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <span className="font-medium text-sm">{t.title}</span>
+                  <div className="flex items-center gap-1.5">
+                    {editable ? (
+                      <Select value={t.status} onValueChange={v => handleUpdateTask(t.id, { status: v, ...(v === 'done' ? { completion_date: new Date().toISOString().split('T')[0] } : {}) })}>
+                        <SelectTrigger className={`h-7 text-xs ${TASK_STATUS_STYLES[t.status] || 'bg-muted text-muted-foreground'}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todo">Pending</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="blocked">Awaiting Parts</SelectItem>
+                          <SelectItem value="done">Complete</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className={`status-badge text-xs ${TASK_STATUS_STYLES[t.status] || ''}`}>{TASK_STATUS_DISPLAY[t.status] || t.status}</span>
+                    )}
+                    {editable && (
+                      <button onClick={() => handleDeleteTask(t.id, t.title)} className="p-1 hover:bg-destructive/10 rounded">
+                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                  <div>Assigned: <span className="text-foreground">{t.assignee || '—'}</span></div>
+                  <div>Hours: <span className="text-foreground font-mono">{t.labor_hours}h</span></div>
+                  <div>Parts: <span className="text-foreground">{t.parts_used || 'None'}</span></div>
+                  {t.completion_date && <div>Completed: <span className="text-foreground">{t.completion_date}</span></div>}
+                </div>
+                {t.notes && <p className="text-xs text-muted-foreground mt-2 italic">{t.notes}</p>}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center py-8 text-muted-foreground">No tasks yet</p>
+        )}
+      </Section>
+    </div>
+  );
+}
+
+// ── Expenses Content ─────────────────────────────────────
+function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canEdit: editable }: {
+  pianoId: string; expenses: any; clientRecord: any; donationRecord: any; canEdit: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<any>(null);
+  const qc = useQueryClient();
+  const { user, profile } = useAuth();
+
+  const startEdit = () => {
+    if (expenses) {
+      setForm({ ...expenses });
+    } else {
+      setForm({ piano_id: pianoId, purchase_price: 0, moving_cost: 0, parts_cost: 0, labor_hours: 0, labor_cost: 0, marketing_cost: 0, estimated_sale_price: 0 });
+    }
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    const total = (parseFloat(form.purchase_price) || 0) + (parseFloat(form.moving_cost) || 0) +
+      (parseFloat(form.parts_cost) || 0) + (parseFloat(form.labor_cost) || 0) + (parseFloat(form.marketing_cost) || 0);
+    const data = {
+      purchase_price: parseFloat(form.purchase_price) || 0,
+      moving_cost: parseFloat(form.moving_cost) || 0,
+      parts_cost: parseFloat(form.parts_cost) || 0,
+      labor_hours: parseFloat(form.labor_hours) || 0,
+      labor_cost: parseFloat(form.labor_cost) || 0,
+      marketing_cost: parseFloat(form.marketing_cost) || 0,
+      estimated_sale_price: parseFloat(form.estimated_sale_price) || null,
+      actual_sale_price: form.actual_sale_price ? parseFloat(form.actual_sale_price) : null,
+    };
+
+    if (expenses?.id) {
+      await supabase.from('expenses').update(data).eq('id', expenses.id);
+    } else {
+      await supabase.from('expenses').insert({ ...data, piano_id: pianoId });
+    }
+
+    if (user) {
+      await supabase.from('activity_log').insert({
+        piano_id: pianoId, user_id: user.id, user_name: profile?.full_name || '',
+        action_description: 'Updated expenses',
+      });
+    }
+
+    qc.invalidateQueries({ queryKey: ['expenses', pianoId] });
+    qc.invalidateQueries({ queryKey: ['activity_log', pianoId] });
+    setEditing(false);
+    toast({ title: 'Saved' });
+  };
+
+  if (clientRecord) {
+    return (
+      <Section title="Client Job Details">
         <div className="grid sm:grid-cols-2 gap-x-6">
           {[
-            ['Internal ID', piano.inventoryId], ['Tag', piano.tag], ['Color Tag', piano.colorTag?.replace(/_/g, ' ')],
-            ['Brand', piano.brand], ['Serial', piano.serialNumber], ['Type', PIANO_TYPE_LABELS[piano.pianoType]],
-            ['Finish', piano.finish || '—'], ['Bench', piano.benchIncluded ? 'Included' : 'Not included'],
-            ['Year Built', piano.yearBuilt ? `c. ${piano.yearBuilt}${piano.yearEstimated ? ' (est.)' : ''}` : '—'],
-            ['Country', piano.countryOfOrigin || '—'],
+            ['Client Name', clientRecord.client_name],
+            ['Estimate', clientRecord.estimate ? `$${clientRecord.estimate}` : '—'],
+            ['Deposit', `$${clientRecord.deposit_received || 0}`],
+            ['Work Authorized', clientRecord.work_authorized ? 'Yes' : 'No'],
+            ['Labor Hours', `${clientRecord.labor_hours || 0}h`],
+            ['Invoice Total', clientRecord.invoice_total ? `$${clientRecord.invoice_total}` : 'Pending'],
+            ['Balance Due', `$${clientRecord.balance_due || 0}`],
+            ['Pickup Date', clientRecord.pickup_date || 'TBD'],
+          ].map(([k, v]) => (
+            <div key={k as string} className="flex justify-between py-2 border-b">
+              <span className="text-sm text-muted-foreground">{k as string}</span>
+              <span className="text-sm font-medium">{v as string}</span>
+            </div>
+          ))}
+        </div>
+      </Section>
+    );
+  }
+
+  if (donationRecord) {
+    return (
+      <Section title="Donation Project">
+        <div className="grid sm:grid-cols-2 gap-x-6">
+          {[
+            ['Recipient', donationRecord.donation_recipient || '—'],
+            ['Status', (donationRecord.donation_status || '').replace(/_/g, ' ')],
+            ['Value', donationRecord.donation_value ? `$${donationRecord.donation_value}` : '—'],
+            ['Delivery', donationRecord.delivery_date || 'TBD'],
           ].map(([k, v]) => (
             <div key={k as string} className="flex justify-between py-2 border-b">
               <span className="text-sm text-muted-foreground">{k as string}</span>
@@ -223,400 +707,160 @@ function OverviewTab({ piano, performanceProfile }: { piano: any; performancePro
             </div>
           ))}
         </div>
+        {donationRecord.notes && <p className="mt-3 text-sm text-muted-foreground">{donationRecord.notes}</p>}
       </Section>
-
-      {piano.frictionScore && (
-        <Section title="Friction Score">
-          <FrictionDots score={piano.frictionScore} />
-          {piano.frictionScore >= 7 && (
-            <p className="text-xs text-destructive mt-2">High friction — significant investment risk</p>
-          )}
-          {piano.frictionScore >= 4 && piano.frictionScore < 7 && (
-            <p className="text-xs text-warning mt-2">Moderate friction — monitor costs</p>
-          )}
-        </Section>
-      )}
-
-      <Section title="ROI Health">
-        <div className="flex items-center gap-3">
-          <span className={`status-badge text-sm ${ROI_HEALTH_COLORS[piano.roiHealth]}`}>
-            {ROI_HEALTH_LABELS[piano.roiHealth]}
-          </span>
-          {piano.roiHealth === 'watch' && (
-            <span className="text-xs text-muted-foreground">Cap investment or escalate to Diamond</span>
-          )}
-        </div>
-      </Section>
-
-      {piano.privateNotes && (
-        <Section title="Private Notes">
-          <p className="text-sm text-muted-foreground">{piano.privateNotes}</p>
-        </Section>
-      )}
-
-      {performanceProfile && (
-        <Section title="Performance Profile">
-          <div className="grid sm:grid-cols-2 gap-x-6">
-            {[
-              ['Pitch Level', performanceProfile.pitchLevel],
-              ['Last Tuning', performanceProfile.lastTuningDate || '—'],
-              ['Pitch Raise Required', performanceProfile.pitchRaiseRequired ? 'Required' : 'Not required'],
-              ['Regulation Status', performanceProfile.regulationStatus],
-              ['Voicing Status', performanceProfile.voicingStatus],
-              ['Humidity Sensitivity', performanceProfile.humiditySensitivity],
-            ].map(([label, value]) => (
-              <div key={label as string} className="flex justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">{label as string}</span>
-                <span className="text-sm font-medium">{value as string}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-    </div>
-  );
-}
-
-// ── Intake Tab ───────────────────────────────────────────
-
-function IntakeTab({ piano, inspection, structuralIssues }: { piano: any; inspection: any; structuralIssues: any }) {
-  if (!inspection) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>No inspection report yet</p>
-        <Button variant="outline" size="sm" className="mt-3">Create Inspection Report</Button>
-      </div>
     );
   }
 
-  const conditionEntries: [string, ConditionScore][] = [
-    ['Soundboard', inspection.soundboard], ['Bridges', inspection.bridges],
-    ['Pinblock', inspection.pinblock], ['Strings', inspection.strings],
-    ['Tuning Pins', inspection.tuningPins], ['Action', inspection.action],
-    ['Hammers', inspection.hammers], ['Dampers', inspection.dampers],
-    ['Keytops', inspection.keytops], ['Pedals', inspection.pedals],
-    ['Trapwork', inspection.trapwork], ['Cabinet', inspection.cabinet],
-    ['Casters', inspection.casters],
-  ];
-
-  const avgScore = conditionEntries.reduce((s, [, v]) => s + v, 0) / conditionEntries.length;
-
-  const allIssues = [
-    'Soundboard cracks', 'Bridge separation', 'Loose tuning pins', 'Rust',
-    'Water damage', 'Action wear', 'Loose joints', 'Pedal problems',
-  ];
-  const issueKeys = [
-    'soundboardCracks', 'bridgeSeparation', 'looseTuningPins', 'rust',
-    'waterDamage', 'actionWear', 'looseJoints', 'pedalProblems',
-  ];
-
-  return (
-    <div className="space-y-0">
-      <Section title="Condition Scores (1–5)">
-        <div className="space-y-2.5">
-          {conditionEntries.map(([name, score]) => (
-            <ScoreBar key={name} label={name} value={score} />
-          ))}
-        </div>
-        <div className="mt-4 pt-3 border-t">
-          <p className="text-sm text-muted-foreground">
-            Overall avg: <span className="font-mono font-semibold text-foreground">{avgScore.toFixed(1)}</span> / 5
-          </p>
-        </div>
-      </Section>
-
-      {structuralIssues && (
-        <Section title="Structural Issues">
-          <div className="grid sm:grid-cols-2 gap-2">
-            {allIssues.map((issue, i) => {
-              const present = structuralIssues[issueKeys[i] as keyof typeof structuralIssues] as boolean;
-              return (
-                <div key={issue} className={`flex items-center gap-2 py-2 px-3 rounded border ${present ? 'bg-destructive/5 border-destructive/20' : 'bg-card'}`}>
-                  <div className={`w-2 h-2 rounded-full ${present ? 'bg-destructive' : 'bg-success'}`} />
-                  <span className="text-sm">{issue}</span>
-                </div>
-              );
-            })}
-          </div>
-        </Section>
-      )}
-
-      <Section title="Source & Ownership">
-        <div className="flex flex-wrap gap-2">
-          <Tag>{OWNERSHIP_LABELS[piano.ownershipCategory]}</Tag>
-          <Tag className="bg-secondary text-secondary-foreground">Source: {piano.source.replace(/_/g, ' ')}</Tag>
-        </div>
-      </Section>
-
-      {inspection.recommendedWork && (
-        <Section title="Recommended Work">
-          <p className="text-sm text-muted-foreground">{inspection.recommendedWork}</p>
-          <div className="mt-2">
-            <span className={`status-badge ${inspection.priorityLevel === 'high' || inspection.priorityLevel === 'urgent' ? 'bg-destructive/10 text-destructive' : 'bg-warning/10 text-warning'}`}>
-              Priority: {inspection.priorityLevel}
-            </span>
-          </div>
-        </Section>
-      )}
-    </div>
-  );
-}
-
-// ── Restoration Tab ──────────────────────────────────────
-
-function RestorationTab({ tasks, performanceProfile }: { tasks: any[]; performanceProfile: any }) {
-  return (
-    <div className="space-y-0">
-      <Section title="Restoration Tasks">
-        {tasks.length > 0 ? (
-          <div className="space-y-2">
-            {tasks.map((t: any) => (
-              <div key={t.id} className="p-4 bg-card rounded-lg border">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <span className="font-medium text-sm">{t.title}</span>
-                  <span className={`status-badge text-xs flex-shrink-0 ${TASK_STATUS_STYLES[t.status] || 'bg-muted text-muted-foreground'}`}>
-                    {TASK_STATUS_DISPLAY[t.status] || t.status}
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
-                  <div>Assigned: <span className="text-foreground">{t.assignee || '—'}</span></div>
-                  <div>Hours: <span className="text-foreground font-mono">{t.laborHours}h</span></div>
-                  <div>Parts: <span className="text-foreground">{t.partsUsed || 'None'}</span></div>
-                  {t.completionDate && <div>Completed: <span className="text-foreground">{t.completionDate}</span></div>}
-                </div>
-                {t.notes && <p className="text-xs text-muted-foreground mt-2 italic">{t.notes}</p>}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No renovation tasks yet</p>
-            <Button variant="outline" size="sm" className="mt-3">Add Task</Button>
-          </div>
-        )}
-      </Section>
-
-      {performanceProfile && (
-        <Section title="Performance Profile">
-          <div className="grid sm:grid-cols-2 gap-x-6">
-            {[
-              ['Pitch Level', performanceProfile.pitchLevel],
-              ['Last Tuning', performanceProfile.lastTuningDate || 'Unknown'],
-              ['Pitch Raise', performanceProfile.pitchRaiseRequired ? 'Required' : 'Not required'],
-              ['Regulation', performanceProfile.regulationStatus],
-              ['Voicing', performanceProfile.voicingStatus],
-              ['Humidity', performanceProfile.humiditySensitivity],
-            ].map(([k, v]) => (
-              <div key={k as string} className="flex justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">{k as string}</span>
-                <span className="text-sm font-medium">{v as string}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-    </div>
-  );
-}
-
-// ── Expenses Tab ─────────────────────────────────────────
-
-function ExpensesTab({ businessCost, clientJob, donation, sale, expenses, expenseTotal, expenseByCategory }: any) {
-  if (businessCost) {
-    const { totalInvestment, estimatedSalePrice, projectedProfit } = businessCost;
-    const margin = totalInvestment > 0 && projectedProfit ? Math.round((projectedProfit / totalInvestment) * 100) : 0;
+  if (editing && form) {
+    const total = (parseFloat(form.purchase_price) || 0) + (parseFloat(form.moving_cost) || 0) +
+      (parseFloat(form.parts_cost) || 0) + (parseFloat(form.labor_cost) || 0) + (parseFloat(form.marketing_cost) || 0);
+    const est = parseFloat(form.estimated_sale_price) || 0;
+    const profit = est - total;
+    const margin = total > 0 ? Math.round((profit / total) * 100) : 0;
 
     return (
       <div className="space-y-0">
         <Section title="Cost Breakdown">
+          <div className="space-y-3">
+            {[
+              ['Purchase Price', 'purchase_price'], ['Moving Cost', 'moving_cost'], ['Parts Cost', 'parts_cost'],
+              ['Labor Hours', 'labor_hours'], ['Labor Cost', 'labor_cost'], ['Marketing', 'marketing_cost'],
+              ['Est. Sale Price', 'estimated_sale_price'],
+            ].map(([label, key]) => (
+              <div key={key as string} className="flex items-center justify-between gap-4">
+                <span className="text-sm text-muted-foreground">{label as string}</span>
+                <Input type="number" value={form[key as string] ?? ''} onChange={e => setForm((f: any) => ({ ...f, [key as string]: e.target.value }))} className="w-32 h-8 text-sm text-right" />
+              </div>
+            ))}
+          </div>
+        </Section>
+        <Section title="Summary">
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-muted-foreground">Total Invested</span><span className="font-mono font-bold">${total.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Projected Profit</span><span className={`font-mono font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toLocaleString()}</span></div>
+            {margin > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Margin</span><span className="font-mono">{margin}%</span></div>}
+          </div>
+        </Section>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSave}>Save</Button>
+          <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (expenses) {
+    const total = (expenses.purchase_price || 0) + (expenses.moving_cost || 0) + (expenses.parts_cost || 0) + (expenses.labor_cost || 0) + (expenses.marketing_cost || 0);
+    const profit = (expenses.estimated_sale_price || 0) - total;
+    const margin = total > 0 ? Math.round((profit / total) * 100) : 0;
+
+    return (
+      <div className="space-y-0">
+        <Section title="Cost Breakdown">
+          {editable && <Button size="sm" variant="outline" className="mb-3" onClick={startEdit}><Edit className="h-3.5 w-3.5 mr-1" /> Edit</Button>}
           <div className="space-y-1.5">
             {[
-              ['Purchase Price', businessCost.purchasePrice],
-              ['Moving Cost', businessCost.movingCost],
-              ['Parts Cost', businessCost.partsCost],
-              ['Labor Cost', businessCost.laborCost],
-              ['Marketing', businessCost.marketingCost],
+              ['Purchase Price', expenses.purchase_price], ['Moving Cost', expenses.moving_cost],
+              ['Parts Cost', expenses.parts_cost], ['Labor Cost', expenses.labor_cost], ['Marketing', expenses.marketing_cost],
             ].map(([k, v]) => (
               <div key={k as string} className="flex justify-between py-2 border-b">
                 <span className="text-sm text-muted-foreground">{k as string}</span>
-                <span className="text-sm font-mono">${(v as number).toLocaleString()}</span>
+                <span className="text-sm font-mono">${((v as number) || 0).toLocaleString()}</span>
               </div>
             ))}
           </div>
         </Section>
-
         <Section title="Profit Summary">
           <div className="space-y-3">
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-sm font-medium">Total Invested</span>
-              <span className="text-sm font-mono font-bold">${totalInvestment.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-sm font-medium">Est. Sale Price</span>
-              <span className="text-sm font-mono font-bold">${(estimatedSalePrice || 0).toLocaleString()}</span>
-            </div>
+            <div className="flex justify-between py-2 border-b"><span className="text-sm font-medium">Total Invested</span><span className="text-sm font-mono font-bold">${total.toLocaleString()}</span></div>
+            <div className="flex justify-between py-2 border-b"><span className="text-sm font-medium">Est. Sale Price</span><span className="text-sm font-mono font-bold">${(expenses.estimated_sale_price || 0).toLocaleString()}</span></div>
             <div className="flex justify-between items-center py-2">
               <span className="text-sm font-medium">Projected Profit</span>
               <div className="text-right">
-                <span className={`text-lg font-mono font-bold ${(projectedProfit || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
-                  ${(projectedProfit || 0).toLocaleString()}
-                </span>
-                {margin > 0 && (
-                  <span className="text-xs text-muted-foreground ml-2">{margin}% margin</span>
-                )}
+                <span className={`text-lg font-mono font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toLocaleString()}</span>
+                {margin > 0 && <span className="text-xs text-muted-foreground ml-2">{margin}% margin</span>}
               </div>
             </div>
           </div>
         </Section>
       </div>
-    );
-  }
-
-  if (clientJob) {
-    return (
-      <div className="space-y-0">
-        <Section title="Client Job Details">
-          <div className="grid sm:grid-cols-2 gap-x-6">
-            {[
-              ['Client Name', clientJob.clientName],
-              ['Estimate', clientJob.estimate ? `$${clientJob.estimate.toLocaleString()}` : '—'],
-              ['Deposit Received', `$${clientJob.depositReceived.toLocaleString()}`],
-              ['Work Authorized', clientJob.workAuthorized ? 'Yes' : 'No'],
-              ['Labor Hours', `${clientJob.laborHours}h`],
-              ['Invoice Total', clientJob.invoiceTotal ? `$${clientJob.invoiceTotal.toLocaleString()}` : 'Pending'],
-              ['Balance Due', `$${clientJob.balanceDue.toLocaleString()}`],
-              ['Pickup Date', clientJob.pickupDate || 'TBD'],
-            ].map(([label, value]) => (
-              <div key={label as string} className="flex justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">{label as string}</span>
-                <span className="text-sm font-medium">{value as string}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      </div>
-    );
-  }
-
-  if (donation) {
-    return (
-      <div className="space-y-0">
-        <Section title="Donation Project">
-          <div className="grid sm:grid-cols-2 gap-x-6">
-            {[
-              ['Recipient', donation.donationRecipient],
-              ['Status', donation.donationStatus.replace(/_/g, ' ')],
-              ['Donation Value', donation.donationValue ? `$${donation.donationValue.toLocaleString()}` : '—'],
-              ['Delivery Date', donation.deliveryDate || 'TBD'],
-            ].map(([label, value]) => (
-              <div key={label as string} className="flex justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">{label as string}</span>
-                <span className="text-sm font-medium capitalize">{value as string}</span>
-              </div>
-            ))}
-          </div>
-          {donation.notes && (
-            <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground">{donation.notes}</p>
-            </div>
-          )}
-        </Section>
-      </div>
-    );
-  }
-
-  if (expenses.length > 0) {
-    return (
-      <Section title="All Expenses">
-        <div className="space-y-2">
-          {expenses.map((expense: any) => (
-            <div key={expense.id} className="flex items-center justify-between py-2 px-3 bg-card rounded border">
-              <div>
-                <p className="text-sm font-medium">{expense.vendor}</p>
-                <p className="text-xs text-muted-foreground">{expense.date} · {expense.category}</p>
-              </div>
-              <span className="font-mono text-sm">${expense.amount.toLocaleString()}</span>
-            </div>
-          ))}
-        </div>
-      </Section>
     );
   }
 
   return (
     <div className="text-center py-12 text-muted-foreground">
       <p>No expenses recorded</p>
-      <Button variant="outline" size="sm" className="mt-3">Add Expense</Button>
+      {editable && <Button variant="outline" size="sm" className="mt-3" onClick={startEdit}>Add Expenses</Button>}
     </div>
   );
 }
 
-// ── Character Notes Tab ──────────────────────────────────
+// ── Character Notes Content ──────────────────────────────
+function CharacterContent({ pianoId, characterNotes, canEdit: editable }: {
+  pianoId: string; characterNotes: any; canEdit: boolean;
+}) {
+  const qc = useQueryClient();
+  const { user, profile } = useAuth();
 
-function CharacterTab({ characterNotes }: { characterNotes: any }) {
-  if (!characterNotes) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <p>No character notes yet</p>
-        <Button variant="outline" size="sm" className="mt-3">Add Character Notes</Button>
-      </div>
-    );
-  }
+  const handleTagToggle = async (field: string, tag: string) => {
+    if (!editable) return;
+    const current: string[] = characterNotes?.[field] || [];
+    const updated = current.includes(tag) ? current.filter((t: string) => t !== tag) : [...current, tag];
 
-  const tagSections: [string, string[], string][] = [
-    ['Tonal Character', (characterNotes.tonalCharacter || []).map((t: string) => TONAL_CHARACTER_LABELS[t as keyof typeof TONAL_CHARACTER_LABELS] || t), 'bg-primary/10 text-primary'],
-    ['Action Feel', (characterNotes.actionFeel || []).map((a: string) => ACTION_FEEL_LABELS[a as keyof typeof ACTION_FEEL_LABELS] || a), 'bg-info/10 text-info'],
-    ['Musical Suitability', (characterNotes.musicalSuitability || []).map((m: string) => MUSICAL_SUITABILITY_LABELS[m as keyof typeof MUSICAL_SUITABILITY_LABELS] || m), 'bg-success/10 text-success'],
-    ['Cabinet / Visual', (characterNotes.cabinetCharacter || []).map((c: string) => CABINET_CHARACTER_LABELS[c as keyof typeof CABINET_CHARACTER_LABELS] || c), 'bg-purple-100 text-purple-700'],
+    if (characterNotes?.id) {
+      await supabase.from('character_notes').update({ [field]: updated }).eq('id', characterNotes.id);
+    } else {
+      await supabase.from('character_notes').insert({ piano_id: pianoId, [field]: updated });
+    }
+    qc.invalidateQueries({ queryKey: ['character_notes', pianoId] });
+    toast({ title: 'Saved' });
+  };
+
+  const handleShopNotes = async (value: string) => {
+    if (characterNotes?.id) {
+      await supabase.from('character_notes').update({ custom_shop_notes: value }).eq('id', characterNotes.id);
+    } else {
+      await supabase.from('character_notes').insert({ piano_id: pianoId, custom_shop_notes: value });
+    }
+    qc.invalidateQueries({ queryKey: ['character_notes', pianoId] });
+    toast({ title: 'Saved' });
+  };
+
+  const tagSections: { title: string; field: string; labels: Record<string, string>; colorClass: string }[] = [
+    { title: 'Tonal Character', field: 'tonal_character', labels: TONAL_CHARACTER_LABELS, colorClass: 'bg-primary/10 text-primary' },
+    { title: 'Action Feel', field: 'action_feel', labels: ACTION_FEEL_LABELS, colorClass: 'bg-info/10 text-info' },
+    { title: 'Musical Suitability', field: 'musical_suitability', labels: MUSICAL_SUITABILITY_LABELS, colorClass: 'bg-success/10 text-success' },
+    { title: 'Cabinet / Visual', field: 'cabinet_character', labels: CABINET_CHARACTER_LABELS, colorClass: 'bg-purple-100 text-purple-700' },
   ];
 
   return (
     <div className="space-y-0">
-      {tagSections.map(([title, values, colorClass]) => (
-        values.length > 0 && (
-          <Section key={title} title={title}>
+      {tagSections.map(({ title, field, labels, colorClass }) => {
+        const selected: string[] = characterNotes?.[field] || [];
+        return (
+          <Section key={field} title={title}>
             <div className="flex flex-wrap gap-2">
-              {values.map((v: string) => (
-                <Tag key={v} className={colorClass}>{v}</Tag>
-              ))}
+              {Object.entries(labels).map(([key, label]) => {
+                const isSelected = selected.includes(key);
+                return (
+                  <button key={key} onClick={() => handleTagToggle(field, key)} disabled={!editable}
+                    className={`status-badge transition-colors ${isSelected ? colorClass : 'bg-muted/50 text-muted-foreground'} ${editable ? 'cursor-pointer hover:opacity-80' : ''}`}
+                  >{label}</button>
+                );
+              })}
             </div>
           </Section>
-        )
-      ))}
+        );
+      })}
 
-      {characterNotes.customShopNotes && (
-        <Section title="Custom Shop Notes">
-          <p className="text-sm text-muted-foreground leading-relaxed">{characterNotes.customShopNotes}</p>
-        </Section>
-      )}
+      <Section title="Custom Shop Notes">
+        {editable ? (
+          <EditableTextarea value={characterNotes?.custom_shop_notes || ''} onSave={handleShopNotes} />
+        ) : (
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{characterNotes?.custom_shop_notes || 'No notes yet'}</p>
+        )}
+      </Section>
     </div>
-  );
-}
-
-// ── Activity Tab ─────────────────────────────────────────
-
-function ActivityTab({ activity }: { activity: any[] }) {
-  if (activity.length === 0) {
-    return <p className="text-center py-12 text-muted-foreground">No activity recorded</p>;
-  }
-
-  return (
-    <Section title="Activity Log">
-      <div className="space-y-3">
-        {activity.map((a: any) => (
-          <div key={a.id} className="flex gap-3 py-2 border-b last:border-0">
-            <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-              {a.userName.split(' ').map((n: string) => n[0]).join('')}
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground font-mono">
-                {new Date(a.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · {a.userName}
-              </p>
-              <p className="text-sm">{a.detail}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </Section>
   );
 }
