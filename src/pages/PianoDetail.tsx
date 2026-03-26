@@ -65,15 +65,15 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
 
   if (type === 'select' && options) {
     return (
-      <div className="flex justify-between py-2 border-b items-center">
-        <span className="text-sm text-muted-foreground">{label}</span>
-        <div className="flex items-center gap-1">
+      <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b gap-1 sm:items-center">
+        <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono">{label}</span>
+        <div className="flex items-center gap-1 w-full sm:w-auto">
           <Select value={draft} onValueChange={v => { setDraft(v); }}>
-            <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full sm:w-40 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(options).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
           </Select>
-          <button onClick={save} className="p-1 hover:bg-success/10 rounded"><Check className="h-3.5 w-3.5 text-success" /></button>
-          <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded"><X className="h-3.5 w-3.5 text-destructive" /></button>
+          <button onClick={save} className="p-1 hover:bg-success/10 rounded flex-shrink-0"><Check className="h-3.5 w-3.5 text-success" /></button>
+          <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded flex-shrink-0"><X className="h-3.5 w-3.5 text-destructive" /></button>
         </div>
       </div>
     );
