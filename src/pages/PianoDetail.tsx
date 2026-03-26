@@ -49,12 +49,12 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
 
   if (!editing) {
     return (
-      <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b group gap-1">
+      <div className="group flex flex-col gap-1 border-b py-2 sm:flex-row sm:justify-between sm:gap-3">
         <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono">{label}</span>
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium break-words whitespace-pre-wrap w-full sm:w-auto">{options ? options[value] || value : value || '—'}</span>
+        <div className="flex w-full min-w-0 items-start gap-1.5 sm:w-auto sm:max-w-[60%] sm:justify-end">
+          <span className="min-w-0 flex-1 whitespace-pre-wrap break-words text-left text-sm font-medium">{options ? options[value] || value : value || '—'}</span>
           {editable && (
-            <button onClick={() => { setDraft(value); setEditing(true); }} className="opacity-0 group-hover:opacity-100 sm:transition-opacity flex-shrink-0" style={{ opacity: undefined }}>
+            <button onClick={() => { setDraft(value); setEditing(true); }} className="flex-shrink-0 self-start opacity-0 group-hover:opacity-100 sm:self-center sm:transition-opacity" style={{ opacity: undefined }}>
               <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
             </button>
           )}
@@ -65,11 +65,11 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
 
   if (type === 'select' && options) {
     return (
-      <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b gap-1 sm:items-center">
+      <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono">{label}</span>
-        <div className="flex items-center gap-1 w-full sm:w-auto">
+        <div className="flex w-full min-w-0 items-center gap-1 sm:w-auto sm:max-w-[60%]">
           <Select value={draft} onValueChange={v => { setDraft(v); }}>
-            <SelectTrigger className="h-8 w-full sm:w-40 text-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-full min-w-0 text-xs sm:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(options).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
           </Select>
           <button onClick={save} className="p-1 hover:bg-success/10 rounded flex-shrink-0"><Check className="h-3.5 w-3.5 text-success" /></button>
@@ -80,13 +80,13 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
   }
 
   return (
-    <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b gap-1 sm:items-center">
+    <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono shrink-0">{label}</span>
-      <div className="flex items-center gap-1 w-full sm:w-auto">
+      <div className="flex w-full min-w-0 items-start gap-1 sm:w-auto sm:max-w-[60%] sm:items-center">
         {type === 'textarea' ? (
-          <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="text-sm min-h-[100px] w-full" onKeyDown={e => { if (e.key === 'Escape') cancel(); }} />
+          <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="min-h-[100px] w-full min-w-0 text-sm" onKeyDown={e => { if (e.key === 'Escape') cancel(); }} />
         ) : (
-          <Input value={draft} onChange={e => setDraft(e.target.value)} className="h-8 text-sm w-full sm:w-40"
+          <Input value={draft} onChange={e => setDraft(e.target.value)} className="h-8 w-full min-w-0 text-sm sm:w-40"
             onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }} autoFocus />
         )}
         <button onClick={save} className="p-1 hover:bg-success/10 rounded flex-shrink-0"><Check className="h-3.5 w-3.5 text-success" /></button>
@@ -143,7 +143,7 @@ function ScoreBar({ label, value, onSave, canEdit: editable }: { label: string; 
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="mb-6">
+    <div className="mb-6 min-w-0">
       <h3 className="font-heading font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-3 pb-2 border-b">{title}</h3>
       {children}
     </div>
@@ -152,6 +152,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Tag({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return <span className={`status-badge ${className || 'bg-primary/10 text-primary'}`}>{children}</span>;
+}
+
+function ReadonlyDetailRow({ label, value, valueClassName = '' }: { label: string; value: React.ReactNode; valueClassName?: string }) {
+  return (
+    <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:justify-between sm:gap-3">
+      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:text-sm sm:normal-case sm:tracking-normal">{label}</span>
+      <div className="w-full min-w-0 sm:w-auto sm:max-w-[60%]">
+        <span className={`block min-w-0 whitespace-pre-wrap break-words text-left text-sm font-medium ${valueClassName}`}>{value || '—'}</span>
+      </div>
+    </div>
+  );
 }
 
 // ── Main Component ───────────────────────────────────────
@@ -212,7 +223,7 @@ export default function PianoDetail() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-5xl min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
       {!canEdit && (
         <div className="mb-4 p-3 bg-muted/50 border rounded-lg text-sm text-muted-foreground">
           You have view-only access. Contact an admin to request edit permissions.
@@ -339,7 +350,7 @@ export default function PianoDetail() {
                 {canEdit ? (
                   <EditableTextarea value={piano.private_notes} onSave={v => handleFieldUpdate('private_notes', v, piano.private_notes)} />
                 ) : (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{piano.private_notes}</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{piano.private_notes}</p>
                 )}
               </Section>
             )}
@@ -355,10 +366,7 @@ export default function PianoDetail() {
                     ['Voicing Status', performanceProfile.voicing_status],
                     ['Humidity Sensitivity', performanceProfile.humidity_sensitivity],
                   ].map(([label, value]) => (
-                    <div key={label as string} className="flex justify-between py-2 border-b">
-                      <span className="text-sm text-muted-foreground">{label as string}</span>
-                      <span className="text-sm font-medium">{(value as string) || '—'}</span>
-                    </div>
+                    <ReadonlyDetailRow key={label as string} label={label as string} value={(value as string) || '—'} />
                   ))}
                 </div>
               </Section>
@@ -478,8 +486,8 @@ function EditableTextarea({ value, onSave }: { value: string; onSave: (v: string
 
   if (!editing) {
     return (
-      <div className="group cursor-pointer" onClick={() => { setDraft(value); setEditing(true); }}>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{value}</p>
+      <div className="group min-w-0 cursor-pointer" onClick={() => { setDraft(value); setEditing(true); }}>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{value}</p>
         <p className="text-xs text-muted-foreground/50 mt-1 opacity-0 group-hover:opacity-100">Click to edit</p>
       </div>
     );
@@ -487,8 +495,8 @@ function EditableTextarea({ value, onSave }: { value: string; onSave: (v: string
 
   return (
     <div>
-      <Textarea value={draft} onChange={e => setDraft(e.target.value)} rows={6} className="text-sm" autoFocus />
-      <div className="flex gap-2 mt-2">
+      <Textarea value={draft} onChange={e => setDraft(e.target.value)} rows={6} className="w-full min-w-0 text-sm" autoFocus />
+      <div className="mt-2 flex flex-wrap gap-2">
         <Button size="sm" onClick={() => { onSave(draft); setEditing(false); }}>Save</Button>
         <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
       </div>
@@ -808,10 +816,7 @@ function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canE
             ['Balance Due', `$${clientRecord.balance_due || 0}`],
             ['Pickup Date', clientRecord.pickup_date || 'TBD'],
           ].map(([k, v]) => (
-            <div key={k as string} className="flex justify-between py-2 border-b">
-              <span className="text-sm text-muted-foreground">{k as string}</span>
-              <span className="text-sm font-medium">{v as string}</span>
-            </div>
+            <ReadonlyDetailRow key={k as string} label={k as string} value={v as string} />
           ))}
         </div>
       </Section>
@@ -828,13 +833,10 @@ function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canE
             ['Value', donationRecord.donation_value ? `$${donationRecord.donation_value}` : '—'],
             ['Delivery', donationRecord.delivery_date || 'TBD'],
           ].map(([k, v]) => (
-            <div key={k as string} className="flex justify-between py-2 border-b">
-              <span className="text-sm text-muted-foreground">{k as string}</span>
-              <span className="text-sm font-medium capitalize">{v as string}</span>
-            </div>
+            <ReadonlyDetailRow key={k as string} label={k as string} value={v as string} valueClassName="capitalize" />
           ))}
         </div>
-        {donationRecord.notes && <p className="mt-3 text-sm text-muted-foreground">{donationRecord.notes}</p>}
+        {donationRecord.notes && <p className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap break-words">{donationRecord.notes}</p>}
       </Section>
     );
   }
@@ -855,18 +857,18 @@ function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canE
               ['Labor Hours', 'labor_hours'], ['Labor Cost', 'labor_cost'], ['Marketing', 'marketing_cost'],
               ['Est. Sale Price', 'estimated_sale_price'],
             ].map(([label, key]) => (
-              <div key={key as string} className="flex items-center justify-between gap-4">
+              <div key={key as string} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <span className="text-sm text-muted-foreground">{label as string}</span>
-                <Input type="number" value={form[key as string] ?? ''} onChange={e => setForm((f: any) => ({ ...f, [key as string]: e.target.value }))} className="w-32 h-8 text-sm text-right" />
+                <Input type="number" value={form[key as string] ?? ''} onChange={e => setForm((f: any) => ({ ...f, [key as string]: e.target.value }))} className="h-8 w-full text-sm sm:w-32 sm:text-right" />
               </div>
             ))}
           </div>
         </Section>
         <Section title="Summary">
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Total Invested</span><span className="font-mono font-bold">${total.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Projected Profit</span><span className={`font-mono font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toLocaleString()}</span></div>
-            {margin > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Margin</span><span className="font-mono">{margin}%</span></div>}
+            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-muted-foreground">Total Invested</span><span className="font-mono font-bold">${total.toLocaleString()}</span></div>
+            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-muted-foreground">Projected Profit</span><span className={`font-mono font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toLocaleString()}</span></div>
+            {margin > 0 && <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-muted-foreground">Margin</span><span className="font-mono">{margin}%</span></div>}
           </div>
         </Section>
         <div className="flex gap-2">
@@ -891,20 +893,17 @@ function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canE
               ['Purchase Price', expenses.purchase_price], ['Moving Cost', expenses.moving_cost],
               ['Parts Cost', expenses.parts_cost], ['Labor Cost', expenses.labor_cost], ['Marketing', expenses.marketing_cost],
             ].map(([k, v]) => (
-              <div key={k as string} className="flex justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">{k as string}</span>
-                <span className="text-sm font-mono">${((v as number) || 0).toLocaleString()}</span>
-              </div>
+              <ReadonlyDetailRow key={k as string} label={k as string} value={`$${((v as number) || 0).toLocaleString()}`} valueClassName="font-mono" />
             ))}
           </div>
         </Section>
         <Section title="Profit Summary">
           <div className="space-y-3">
-            <div className="flex justify-between py-2 border-b"><span className="text-sm font-medium">Total Invested</span><span className="text-sm font-mono font-bold">${total.toLocaleString()}</span></div>
-            <div className="flex justify-between py-2 border-b"><span className="text-sm font-medium">Est. Sale Price</span><span className="text-sm font-mono font-bold">${(expenses.estimated_sale_price || 0).toLocaleString()}</span></div>
-            <div className="flex justify-between items-center py-2">
+            <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:justify-between"><span className="text-sm font-medium">Total Invested</span><span className="text-sm font-mono font-bold">${total.toLocaleString()}</span></div>
+            <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:justify-between"><span className="text-sm font-medium">Est. Sale Price</span><span className="text-sm font-mono font-bold">${(expenses.estimated_sale_price || 0).toLocaleString()}</span></div>
+            <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm font-medium">Projected Profit</span>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <span className={`text-lg font-mono font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toLocaleString()}</span>
                 {margin > 0 && <span className="text-xs text-muted-foreground ml-2">{margin}% margin</span>}
               </div>
