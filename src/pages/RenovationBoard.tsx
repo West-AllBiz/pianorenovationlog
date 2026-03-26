@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { samplePianos } from '@/data/sampleData';
-import { STATUS_LABELS, PianoStatus, COLOR_TAG_HEX, OWNERSHIP_LABELS } from '@/types/piano';
+import { Loader2 } from 'lucide-react';
+import { usePianos } from '@/hooks/usePianos';
+import { STATUS_LABELS, PianoStatus, COLOR_TAG_HEX, OWNERSHIP_LABELS, type ColorTag, type OwnershipCategory } from '@/types/piano';
 
 const KANBAN_STAGES: PianoStatus[] = [
   'acquired', 'pickup_scheduled', 'transport',
@@ -13,13 +14,17 @@ const KANBAN_STAGES: PianoStatus[] = [
 ];
 
 export default function RenovationBoard() {
+  const { data: pianos, isLoading } = usePianos();
+
   const columns = useMemo(() => {
     return KANBAN_STAGES.map(stage => ({
       stage,
       label: STATUS_LABELS[stage],
-      pianos: samplePianos.filter(p => p.status === stage),
+      pianos: (pianos ?? []).filter(p => p.status === stage),
     }));
-  }, []);
+  }, [pianos]);
+
+  if (isLoading) return <div className="flex items-center justify-center p-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8">
@@ -56,19 +61,19 @@ export default function RenovationBoard() {
                   <div className="flex items-center gap-2 mb-1">
                     <div
                       className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: COLOR_TAG_HEX[piano.colorTag] }}
+                      style={{ backgroundColor: COLOR_TAG_HEX[(piano.color_tag as ColorTag) || 'pink'] || '#94a3b8' }}
                     />
-                    <p className="text-xs font-mono text-muted-foreground">{piano.inventoryId}</p>
+                    <p className="text-xs font-mono text-muted-foreground">{piano.inventory_id}</p>
                   </div>
-                  <p className="font-medium text-sm">{piano.brand} {piano.model}</p>
+                  <p className="font-medium text-sm">{piano.brand} {piano.model || ''}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {OWNERSHIP_LABELS[piano.ownershipCategory]} · {piano.tag}
+                    {OWNERSHIP_LABELS[(piano.ownership_category as OwnershipCategory)] || piano.ownership_category} · {piano.tag || ''}
                   </p>
                   <div className="flex items-center justify-between mt-2">
                     <div className="w-16 h-1 bg-muted rounded-full">
-                      <div className="h-full bg-primary rounded-full" style={{ width: `${piano.percentComplete}%` }} />
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${piano.percent_complete || 0}%` }} />
                     </div>
-                    <span className="text-xs text-muted-foreground">{piano.percentComplete}%</span>
+                    <span className="text-xs text-muted-foreground">{piano.percent_complete || 0}%</span>
                   </div>
                 </Link>
               ))}
