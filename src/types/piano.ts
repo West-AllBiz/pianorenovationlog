@@ -38,8 +38,8 @@ export type TaskCategory =
   | 'cleaning' | 'pitch_raise' | 'tuning' | 'regulation' | 'voicing'
   | 'hammer_shaping' | 'hammer_replacement' | 'damper_regulation' | 'action_rebuild'
   | 'key_leveling' | 'key_bushing_replacement' | 'pedal_repair' | 'string_replacement'
-  | 'bridge_repair' | 'soundboard_repair' | 'cabinet_repair' | 'refinishing'
-  | 'polishing' | 'final_detailing' | 'other';
+  | 'bridge_repair' | 'soundboard_repair' | 'cabinet_work' | 'cabinet_repair' | 'refinishing'
+  | 'polishing' | 'final_detailing' | 'final_qc' | 'structural' | 'other';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
 
