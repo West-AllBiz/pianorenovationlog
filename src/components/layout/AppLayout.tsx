@@ -41,14 +41,14 @@ export function AppLayout() {
       {/* Main content */}
       <div className="flex flex-1 flex-col lg:pl-64">
         {/* Mobile header */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-card px-4 lg:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background px-4 lg:hidden">
           <button
             onClick={() => setSidebarOpen(true)}
             className="touch-target flex items-center justify-center rounded-md text-foreground"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <h1 className="font-heading text-lg font-semibold">Piano Renovation Log</h1>
+          <h1 className="font-heading text-lg font-semibold text-primary">Nick's Piano Services</h1>
         </header>
 
         <main className="flex-1 overflow-y-auto">
