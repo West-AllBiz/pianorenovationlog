@@ -35,6 +35,10 @@ export type DbPiano = {
   percent_complete: number | null;
   friction_score: number | null;
   roi_health: string | null;
+  finish_plan: string | null;
+  selling_channel: string | null;
+  pricing_notes: string | null;
+  lane: string | null;
   created_at: string;
   updated_at: string;
 };
