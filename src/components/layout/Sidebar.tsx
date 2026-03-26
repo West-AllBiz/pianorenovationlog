@@ -28,8 +28,8 @@ export function Sidebar({ onClose }: SidebarProps) {
           <Music className="h-5 w-5 text-sidebar-primary-foreground" />
         </div>
         <div>
-          <h2 className="font-heading text-base font-semibold text-sidebar-accent-foreground">Piano Renovation Log</h2>
-          <p className="text-xs text-sidebar-foreground/60">by Nick West</p>
+          <h2 className="font-heading text-base font-semibold text-primary">Nick's Piano Services</h2>
+          <p className="text-xs text-muted-foreground">Workshop Dashboard</p>
         </div>
       </div>
 
