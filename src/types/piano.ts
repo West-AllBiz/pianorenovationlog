@@ -343,7 +343,7 @@ export const CONDITION_SCORE_LABELS: Record<number, string> = {
   5: 'Excellent',
 };
 
-export const TASK_CATEGORY_LABELS: Record<TaskCategory, string> = {
+export const TASK_CATEGORY_LABELS: Record<string, string> = {
   cleaning: 'Cleaning',
   pitch_raise: 'Pitch Raise',
   tuning: 'Tuning',
@@ -359,10 +359,13 @@ export const TASK_CATEGORY_LABELS: Record<TaskCategory, string> = {
   string_replacement: 'String Replacement',
   bridge_repair: 'Bridge Repair',
   soundboard_repair: 'Soundboard Repair',
+  cabinet_work: 'Cabinet Work',
   cabinet_repair: 'Cabinet Repair',
   refinishing: 'Refinishing',
   polishing: 'Polishing',
   final_detailing: 'Final Detailing',
+  final_qc: 'Final QC',
+  structural: 'Structural',
   other: 'Other',
 };
 
