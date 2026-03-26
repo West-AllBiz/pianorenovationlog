@@ -11,25 +11,40 @@ import { toast } from '@/hooks/use-toast';
 export default function Login() {
   const navigate = useNavigate();
   const { signIn, signUp } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Generate a deterministic email and password from the name
+  const getCredentials = (inputName: string) => {
+    const slug = inputName.trim().toLowerCase().replace(/\s+/g, '.');
+    return {
+      email: `${slug}@piano.local`,
+      password: `piano-${slug}-2026!`,
+    };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) return;
     setLoading(true);
+
+    const { email, password } = getCredentials(name);
+
     try {
-      if (isSignUp) {
-        const { error } = await signUp(email, password, fullName);
-        if (error) throw error;
-        toast({ title: 'Account created', description: 'Check your email to confirm your account.' });
-      } else {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-        navigate('/dashboard');
+      // Try signing in first
+      const { error: signInError } = await signIn(email, password);
+
+      if (signInError) {
+        // If login fails, create the account automatically
+        const { error: signUpError } = await signUp(email, password, name.trim());
+        if (signUpError) throw signUpError;
+
+        // Auto-confirmed, so sign in immediately
+        const { error: retryError } = await signIn(email, password);
+        if (retryError) throw retryError;
       }
+
+      navigate('/dashboard');
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -60,35 +75,30 @@ export default function Login() {
             <h1 className="font-heading text-2xl font-bold">Piano Renovation Log</h1>
           </div>
 
-          <h2 className="font-heading text-2xl font-semibold mb-1">{isSignUp ? 'Create account' : 'Welcome back'}</h2>
-          <p className="text-muted-foreground mb-8">{isSignUp ? 'Set up your workshop account' : 'Sign in to your workshop'}</p>
+          <h2 className="font-heading text-2xl font-semibold mb-1">Welcome</h2>
+          <p className="text-muted-foreground mb-8">Enter your name to get started</p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {isSignUp && (
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Nick" value={fullName} onChange={(e) => setFullName(e.target.value)} className="h-11" required />
-              </div>
-            )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="nick@nickspiano.com" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11" required />
+              <Label htmlFor="name">Your Name</Label>
+              <Input
+                id="name"
+                placeholder="Nick"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="h-11"
+                required
+                autoFocus
+              />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="h-11" required minLength={6} />
-            </div>
-            <Button type="submit" className="w-full h-11 font-medium" disabled={loading}>
-              {loading ? 'Loading...' : isSignUp ? 'Create account' : 'Sign in'}
+            <Button type="submit" className="w-full h-11 font-medium" disabled={loading || !name.trim()}>
+              {loading ? 'Entering...' : 'Enter Workshop'}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button onClick={() => setIsSignUp(!isSignUp)} className="text-primary font-medium hover:underline">
-              {isSignUp ? 'Sign in' : 'Create account'}
-            </button>
+          <p className="mt-6 text-center text-xs text-muted-foreground">
+            Nick is admin · Others join as contributors
           </p>
         </motion.div>
       </div>
