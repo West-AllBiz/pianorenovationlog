@@ -618,6 +618,39 @@ export type Database = {
           },
         ]
       }
+      task_templates: {
+        Row: {
+          active: boolean | null
+          category: string
+          created_at: string | null
+          default_status: string | null
+          id: string
+          sort_order: number | null
+          task_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          category: string
+          created_at?: string | null
+          default_status?: string | null
+          id?: string
+          sort_order?: number | null
+          task_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          category?: string
+          created_at?: string | null
+          default_status?: string | null
+          id?: string
+          sort_order?: number | null
+          task_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

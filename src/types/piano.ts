@@ -38,8 +38,8 @@ export type TaskCategory =
   | 'cleaning' | 'pitch_raise' | 'tuning' | 'regulation' | 'voicing'
   | 'hammer_shaping' | 'hammer_replacement' | 'damper_regulation' | 'action_rebuild'
   | 'key_leveling' | 'key_bushing_replacement' | 'pedal_repair' | 'string_replacement'
-  | 'bridge_repair' | 'soundboard_repair' | 'cabinet_repair' | 'refinishing'
-  | 'polishing' | 'final_detailing' | 'other';
+  | 'bridge_repair' | 'soundboard_repair' | 'cabinet_work' | 'cabinet_repair' | 'refinishing'
+  | 'polishing' | 'final_detailing' | 'final_qc' | 'structural' | 'other';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
 
@@ -343,7 +343,7 @@ export const CONDITION_SCORE_LABELS: Record<number, string> = {
   5: 'Excellent',
 };
 
-export const TASK_CATEGORY_LABELS: Record<TaskCategory, string> = {
+export const TASK_CATEGORY_LABELS: Record<string, string> = {
   cleaning: 'Cleaning',
   pitch_raise: 'Pitch Raise',
   tuning: 'Tuning',
@@ -359,10 +359,13 @@ export const TASK_CATEGORY_LABELS: Record<TaskCategory, string> = {
   string_replacement: 'String Replacement',
   bridge_repair: 'Bridge Repair',
   soundboard_repair: 'Soundboard Repair',
+  cabinet_work: 'Cabinet Work',
   cabinet_repair: 'Cabinet Repair',
   refinishing: 'Refinishing',
   polishing: 'Polishing',
   final_detailing: 'Final Detailing',
+  final_qc: 'Final QC',
+  structural: 'Structural',
   other: 'Other',
 };
 

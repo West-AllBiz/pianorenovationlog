@@ -496,14 +496,51 @@ function EditableTextarea({ value, onSave }: { value: string; onSave: (v: string
   );
 }
 
+// ── Category grouping for tasks ──────────────────────────
+const CATEGORY_GROUP_ORDER = [
+  { key: 'cleaning', label: 'Assessment & Cleaning' },
+  { key: 'structural', label: 'Structural' },
+  { key: 'regulation', label: 'Mechanical & Regulation' },
+  { key: 'voicing', label: 'Voicing' },
+  { key: 'pedal_repair', label: 'Pedals & Trapwork' },
+  { key: 'tuning', label: 'Tuning' },
+  { key: 'cabinet_work', label: 'Finishing & Cabinet' },
+  { key: 'final_qc', label: 'Final' },
+  { key: 'other', label: 'Other' },
+];
+
+function getCategoryGroup(cat: string): string {
+  if (['cleaning'].includes(cat)) return 'cleaning';
+  if (['structural'].includes(cat)) return 'structural';
+  if (['regulation', 'key_leveling', 'key_bushing_replacement', 'action_rebuild', 'damper_regulation'].includes(cat)) return 'regulation';
+  if (['voicing', 'hammer_shaping', 'hammer_replacement'].includes(cat)) return 'voicing';
+  if (['pedal_repair'].includes(cat)) return 'pedal_repair';
+  if (['tuning', 'pitch_raise'].includes(cat)) return 'tuning';
+  if (['cabinet_work', 'cabinet_repair', 'refinishing', 'polishing', 'final_detailing'].includes(cat)) return 'cabinet_work';
+  if (['final_qc'].includes(cat)) return 'final_qc';
+  return 'other';
+}
+
 // ── Restoration Content ──────────────────────────────────
 function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: editable }: {
   pianoId: string; tasks: any[]; performanceProfile: any; canEdit: boolean;
 }) {
   const [addingTask, setAddingTask] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', category: 'other', assignee: '', status: 'todo', labor_hours: '0', parts_used: '', notes: '' });
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [applyingTemplates, setApplyingTemplates] = useState(false);
   const qc = useQueryClient();
   const { user, profile } = useAuth();
+
+  const doneCount = tasks.filter(t => t.status === 'done').length;
+  const totalCount = tasks.length;
+  const pctComplete = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+  // Group tasks by category
+  const groupedTasks = CATEGORY_GROUP_ORDER.map(g => ({
+    ...g,
+    tasks: tasks.filter(t => getCategoryGroup(t.category || 'other') === g.key),
+  })).filter(g => g.tasks.length > 0);
 
   const handleAddTask = async () => {
     if (!user || !newTask.title.trim()) return;
@@ -538,15 +575,63 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
     toast({ title: 'Saved' });
   };
 
+  const handleApplyStandardTasks = async () => {
+    if (!confirm('This will add all standard tasks not already present on this piano. Existing tasks will not be changed. Continue?')) return;
+    setApplyingTemplates(true);
+    try {
+      const { data: templates } = await supabase.from('task_templates').select('*').eq('active', true);
+      const existingTitles = tasks.map((t: any) => t.title);
+      const toInsert = (templates ?? [])
+        .filter(t => !existingTitles.includes(t.task_name))
+        .map(t => ({
+          piano_id: pianoId, title: t.task_name, category: t.category, status: t.default_status,
+        }));
+      if (toInsert.length === 0) {
+        toast({ title: 'All standard tasks already present' });
+        return;
+      }
+      const { error } = await supabase.from('restoration_tasks').insert(toInsert);
+      if (error) throw error;
+      qc.invalidateQueries({ queryKey: ['tasks', pianoId] });
+      toast({ title: `${toInsert.length} standard tasks applied` });
+    } catch {
+      toast({ title: 'Error', description: 'Failed to apply templates', variant: 'destructive' });
+    } finally {
+      setApplyingTemplates(false);
+    }
+  };
+
+  const toggleGroup = (key: string) => setCollapsedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+
   return (
     <div className="space-y-0">
+      {/* Progress bar */}
+      {totalCount > 0 && (
+        <div className="mb-6 p-4 bg-card rounded-lg border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Tasks Complete: {doneCount} / {totalCount}</span>
+            <span className="text-sm font-bold font-mono">{pctComplete}%</span>
+          </div>
+          <div className="w-full h-2.5 bg-muted rounded-full">
+            <div className="h-full bg-success rounded-full transition-all" style={{ width: `${pctComplete}%` }} />
+          </div>
+        </div>
+      )}
+
       <Section title="Restoration Tasks">
         {editable && (
-          <div className="mb-4">
-            {!addingTask ? (
-              <Button size="sm" variant="outline" onClick={() => setAddingTask(true)}><Plus className="h-4 w-4 mr-1" /> Add Task</Button>
-            ) : (
-              <div className="p-4 bg-card rounded-lg border space-y-3">
+          <div className="mb-4 flex gap-2 flex-wrap">
+            {!addingTask && (
+              <>
+                <Button size="sm" variant="outline" onClick={() => setAddingTask(true)}><Plus className="h-4 w-4 mr-1" /> Add Task</Button>
+                <Button size="sm" variant="outline" onClick={handleApplyStandardTasks} disabled={applyingTemplates}>
+                  {applyingTemplates ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+                  Apply Standard Tasks
+                </Button>
+              </>
+            )}
+            {addingTask && (
+              <div className="w-full p-4 bg-card rounded-lg border space-y-3">
                 <Input placeholder="Task name" value={newTask.title} onChange={e => setNewTask(t => ({ ...t, title: e.target.value }))} />
                 <div className="grid grid-cols-2 gap-3">
                   <Select value={newTask.category} onValueChange={v => setNewTask(t => ({ ...t, category: v }))}>
@@ -576,47 +661,82 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
           </div>
         )}
 
-        {tasks.length > 0 ? (
-          <div className="space-y-2">
-            {tasks.map((t: any) => (
-              <div key={t.id} className="p-4 bg-card rounded-lg border">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <span className="font-medium text-sm">{t.title}</span>
-                  <div className="flex items-center gap-1.5">
-                    {editable ? (
-                      <Select value={t.status} onValueChange={v => handleUpdateTask(t.id, { status: v, ...(v === 'done' ? { completion_date: new Date().toISOString().split('T')[0] } : {}) })}>
-                        <SelectTrigger className={`h-7 text-xs ${TASK_STATUS_STYLES[t.status] || 'bg-muted text-muted-foreground'}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="todo">Pending</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
-                          <SelectItem value="blocked">Awaiting Parts</SelectItem>
-                          <SelectItem value="done">Complete</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <span className={`status-badge text-xs ${TASK_STATUS_STYLES[t.status] || ''}`}>{TASK_STATUS_DISPLAY[t.status] || t.status}</span>
-                    )}
-                    {editable && (
-                      <button onClick={() => handleDeleteTask(t.id, t.title)} className="p-1 hover:bg-destructive/10 rounded">
-                        <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                      </button>
-                    )}
-                  </div>
+        {groupedTasks.length > 0 ? (
+          <div className="space-y-3">
+            {groupedTasks.map(group => {
+              const groupDone = group.tasks.filter((t: any) => t.status === 'done').length;
+              const isCollapsed = collapsedGroups[group.key] ?? false;
+              return (
+                <div key={group.key} className="rounded-lg border overflow-hidden">
+                  <button
+                    onClick={() => toggleGroup(group.key)}
+                    className="w-full flex items-center justify-between p-3 bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <svg className={`h-4 w-4 text-muted-foreground transition-transform ${isCollapsed ? '' : 'rotate-90'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
+                      <span className="text-sm font-semibold">{group.label}</span>
+                      <span className="text-xs font-mono text-muted-foreground">({group.tasks.length})</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono text-muted-foreground">{groupDone}/{group.tasks.length}</span>
+                      <div className="w-16 h-1.5 bg-border rounded-full">
+                        <div className="h-full bg-success rounded-full" style={{ width: `${group.tasks.length > 0 ? (groupDone / group.tasks.length) * 100 : 0}%` }} />
+                      </div>
+                    </div>
+                  </button>
+                  {!isCollapsed && (
+                    <div className="divide-y">
+                      {group.tasks.map((t: any) => (
+                        <div key={t.id} className="p-3 hover:bg-muted/10 transition-colors">
+                          <div className="flex items-start justify-between gap-3 mb-1">
+                            <span className="font-medium text-sm">{t.title}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {editable ? (
+                                <Select value={t.status} onValueChange={v => handleUpdateTask(t.id, { status: v, ...(v === 'done' ? { completion_date: new Date().toISOString().split('T')[0] } : {}) })}>
+                                  <SelectTrigger className={`h-7 text-xs ${TASK_STATUS_STYLES[t.status] || 'bg-muted text-muted-foreground'}`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="todo">Pending</SelectItem>
+                                    <SelectItem value="in_progress">In Progress</SelectItem>
+                                    <SelectItem value="blocked">Awaiting Parts</SelectItem>
+                                    <SelectItem value="done">Complete</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <span className={`status-badge text-xs ${TASK_STATUS_STYLES[t.status] || ''}`}>{TASK_STATUS_DISPLAY[t.status] || t.status}</span>
+                              )}
+                              {editable && (
+                                <button onClick={() => handleDeleteTask(t.id, t.title)} className="p-1 hover:bg-destructive/10 rounded">
+                                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
+                            <div>Assigned: <span className="text-foreground">{t.assignee || '—'}</span></div>
+                            <div>Hours: <span className="text-foreground font-mono">{t.labor_hours}h</span></div>
+                            <div>Parts: <span className="text-foreground">{t.parts_used || 'None'}</span></div>
+                            {t.completion_date && <div>Completed: <span className="text-foreground">{t.completion_date}</span></div>}
+                          </div>
+                          {t.notes && <p className="text-xs text-muted-foreground mt-1 italic">{t.notes}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
-                  <div>Assigned: <span className="text-foreground">{t.assignee || '—'}</span></div>
-                  <div>Hours: <span className="text-foreground font-mono">{t.labor_hours}h</span></div>
-                  <div>Parts: <span className="text-foreground">{t.parts_used || 'None'}</span></div>
-                  {t.completion_date && <div>Completed: <span className="text-foreground">{t.completion_date}</span></div>}
-                </div>
-                {t.notes && <p className="text-xs text-muted-foreground mt-2 italic">{t.notes}</p>}
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
-          <p className="text-center py-8 text-muted-foreground">No tasks yet</p>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-3">No tasks yet</p>
+            {editable && (
+              <Button size="sm" variant="outline" onClick={handleApplyStandardTasks} disabled={applyingTemplates}>
+                Apply Standard Tasks
+              </Button>
+            )}
+          </div>
         )}
       </Section>
     </div>
