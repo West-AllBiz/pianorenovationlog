@@ -255,10 +255,10 @@ export const OWNERSHIP_LABELS: Record<OwnershipCategory, string> = {
 };
 
 export const OWNERSHIP_COLORS: Record<OwnershipCategory, string> = {
-  business_inventory: 'bg-emerald-50 text-emerald-700',
-  client_piano: 'bg-blue-50 text-blue-700',
-  donation_project: 'bg-purple-50 text-purple-700',
-  restoration_archive: 'bg-amber-50 text-amber-700',
+  business_inventory: 'bg-primary/15 text-primary border border-primary/25',
+  client_piano: 'bg-teal/10 text-teal border border-teal/25',
+  donation_project: 'bg-mission/15 text-mission border border-mission/25',
+  restoration_archive: 'bg-muted text-muted-foreground border border-border',
 };
 
 export const STATUS_LABELS: Record<PianoStatus, string> = {
