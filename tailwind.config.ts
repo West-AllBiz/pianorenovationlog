@@ -64,6 +64,15 @@ export default {
           DEFAULT: "hsl(var(--info))",
           foreground: "hsl(var(--info-foreground))",
         },
+        teal: {
+          DEFAULT: "hsl(var(--teal))",
+          foreground: "hsl(var(--teal-foreground))",
+        },
+        mission: {
+          DEFAULT: "hsl(var(--mission))",
+          foreground: "hsl(var(--mission-foreground))",
+        },
+        archive: "hsl(var(--archive))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
