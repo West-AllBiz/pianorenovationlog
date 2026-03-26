@@ -49,12 +49,12 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
 
   if (!editing) {
     return (
-      <div className="flex justify-between py-2 border-b group">
-        <span className="text-sm text-muted-foreground">{label}</span>
+      <div className="flex flex-col sm:flex-row sm:justify-between py-2 border-b group gap-1">
+        <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono">{label}</span>
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-medium">{options ? options[value] || value : value || '—'}</span>
+          <span className="text-sm font-medium break-words whitespace-pre-wrap w-full sm:w-auto">{options ? options[value] || value : value || '—'}</span>
           {editable && (
-            <button onClick={() => { setDraft(value); setEditing(true); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => { setDraft(value); setEditing(true); }} className="opacity-0 group-hover:opacity-100 sm:transition-opacity flex-shrink-0" style={{ opacity: undefined }}>
               <Pencil className="h-3 w-3 text-muted-foreground hover:text-foreground" />
             </button>
           )}
