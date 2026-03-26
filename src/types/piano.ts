@@ -399,10 +399,10 @@ export const ROI_HEALTH_LABELS: Record<RoiHealth, string> = {
 };
 
 export const ROI_HEALTH_COLORS: Record<RoiHealth, string> = {
-  strong: 'bg-success/15 text-success',
-  moderate: 'bg-warning/15 text-warning',
-  watch: 'bg-destructive/15 text-destructive',
-  mission: 'bg-purple-100 text-purple-700',
-  client: 'bg-info/15 text-info',
-  archive: 'bg-muted text-muted-foreground',
+  strong: 'bg-success/15 text-success border border-success/20',
+  moderate: 'bg-primary/15 text-primary border border-primary/20',
+  watch: 'bg-destructive/15 text-destructive border border-destructive/20',
+  mission: 'bg-mission/15 text-mission border border-mission/20',
+  client: 'bg-teal/10 text-teal border border-teal/20',
+  archive: 'bg-muted text-muted-foreground border border-border',
 };
