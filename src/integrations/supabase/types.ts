@@ -420,19 +420,23 @@ export type Database = {
           country_of_origin: string | null
           created_at: string
           finish: string | null
+          finish_plan: string | null
           friction_score: number | null
           id: string
           inventory_id: string
+          lane: string | null
           model: string | null
           ownership_category: string
           percent_complete: number | null
           piano_type: string
           pickup_date: string | null
           pickup_location: string | null
+          pricing_notes: string | null
           private_notes: string | null
           purchase_date: string | null
           purchase_price: number | null
           roi_health: string | null
+          selling_channel: string | null
           serial_number: string | null
           sold_date: string | null
           sold_price: number | null
@@ -455,19 +459,23 @@ export type Database = {
           country_of_origin?: string | null
           created_at?: string
           finish?: string | null
+          finish_plan?: string | null
           friction_score?: number | null
           id?: string
           inventory_id: string
+          lane?: string | null
           model?: string | null
           ownership_category?: string
           percent_complete?: number | null
           piano_type?: string
           pickup_date?: string | null
           pickup_location?: string | null
+          pricing_notes?: string | null
           private_notes?: string | null
           purchase_date?: string | null
           purchase_price?: number | null
           roi_health?: string | null
+          selling_channel?: string | null
           serial_number?: string | null
           sold_date?: string | null
           sold_price?: number | null
@@ -490,19 +498,23 @@ export type Database = {
           country_of_origin?: string | null
           created_at?: string
           finish?: string | null
+          finish_plan?: string | null
           friction_score?: number | null
           id?: string
           inventory_id?: string
+          lane?: string | null
           model?: string | null
           ownership_category?: string
           percent_complete?: number | null
           piano_type?: string
           pickup_date?: string | null
           pickup_location?: string | null
+          pricing_notes?: string | null
           private_notes?: string | null
           purchase_date?: string | null
           purchase_price?: number | null
           roi_health?: string | null
+          selling_channel?: string | null
           serial_number?: string | null
           sold_date?: string | null
           sold_price?: number | null
