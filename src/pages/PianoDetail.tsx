@@ -308,6 +308,13 @@ export default function PianoDetail() {
               </div>
             </Section>
 
+            <Section title="Sales & Finishing">
+              <InlineField label="Finish Plan" value={(piano as any).finish_plan || ''} type="textarea" onSave={v => handleFieldUpdate('finish_plan', v, (piano as any).finish_plan)} canEdit={canEdit} />
+              <InlineField label="Selling Channel" value={(piano as any).selling_channel || ''} onSave={v => handleFieldUpdate('selling_channel', v, (piano as any).selling_channel)} canEdit={canEdit} />
+              <InlineField label="Lane" value={(piano as any).lane || ''} onSave={v => handleFieldUpdate('lane', v, (piano as any).lane)} canEdit={canEdit} />
+              <InlineField label="Pricing Notes" value={(piano as any).pricing_notes || ''} type="textarea" onSave={v => handleFieldUpdate('pricing_notes', v, (piano as any).pricing_notes)} canEdit={canEdit} />
+            </Section>
+
             {piano.friction_score != null && (
               <Section title="Friction Score">
                 <FrictionDots score={piano.friction_score} />

@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
-import { samplePianos, sampleTasks } from '@/data/sampleData';
 import { Calendar } from 'lucide-react';
+import { usePianos } from '@/hooks/usePianos';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TimelineEvent {
   date: string;
@@ -10,17 +12,26 @@ interface TimelineEvent {
 }
 
 export default function CalendarPage() {
-  const events: TimelineEvent[] = [];
-
-  samplePianos.forEach(p => {
-    if (p.pickupDate) events.push({ date: p.pickupDate, title: `Pickup: ${p.brand} ${p.model}`, detail: p.pickupLocation, type: 'pickup' });
-    if (p.soldDate) events.push({ date: p.soldDate, title: `Sold: ${p.brand} ${p.model}`, detail: `$${p.soldPrice?.toLocaleString()}`, type: 'sale' });
+  const { data: pianos } = usePianos();
+  const { data: tasks } = useQuery({
+    queryKey: ['all_tasks'],
+    queryFn: async () => {
+      const { data } = await supabase.from('restoration_tasks').select('*').order('due_date', { ascending: true });
+      return data ?? [];
+    },
   });
 
-  sampleTasks.forEach(t => {
-    if (t.dueDate) {
-      const piano = samplePianos.find(p => p.id === t.pianoId);
-      events.push({ date: t.dueDate, title: t.title, detail: piano ? `${piano.brand} ${piano.model}` : '', type: 'task' });
+  const events: TimelineEvent[] = [];
+
+  (pianos ?? []).forEach(p => {
+    if (p.pickup_date) events.push({ date: p.pickup_date, title: `Pickup: ${p.brand} ${p.model || ''}`, detail: p.pickup_location || '', type: 'pickup' });
+    if (p.sold_date) events.push({ date: p.sold_date, title: `Sold: ${p.brand} ${p.model || ''}`, detail: p.sold_price ? `$${p.sold_price.toLocaleString()}` : '', type: 'sale' });
+  });
+
+  (tasks ?? []).forEach(t => {
+    if (t.due_date) {
+      const piano = (pianos ?? []).find(p => p.id === t.piano_id);
+      events.push({ date: t.due_date, title: t.title, detail: piano ? `${piano.brand} ${piano.model || ''}` : '', type: 'task' });
     }
   });
 
@@ -43,6 +54,9 @@ export default function CalendarPage() {
       <div className="relative">
         <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
         <div className="space-y-4">
+          {events.length === 0 && (
+            <p className="text-sm text-muted-foreground pl-10">No scheduled events yet.</p>
+          )}
           {events.map((event, i) => (
             <motion.div
               key={i}
