@@ -5,11 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Loader2, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Loader2, GripVertical, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { TASK_CATEGORY_LABELS } from '@/types/piano';
+import { WorkflowStagesManager } from '@/components/WorkflowStagesManager';
+import { usePianos } from '@/hooks/usePianos';
 
 type TaskTemplate = {
   id: string;
@@ -110,8 +112,122 @@ function TaskTemplateManager() {
   );
 }
 
+function generateCSV(headers: string[], rows: string[][]) {
+  const csv = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `nicks-piano-services-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function ExportSection() {
+  const { data: pianos = [] } = usePianos();
+  const [exporting, setExporting] = useState<string | null>(null);
+
+  const handleExportInventory = async () => {
+    setExporting('inventory');
+    try {
+      const { data: expenses } = await supabase.from('expenses').select('*');
+      const expMap: Record<string, any> = {};
+      (expenses ?? []).forEach(e => { expMap[e.piano_id] = e; });
+
+      const headers = [
+        'ID', 'Tag', 'Color Tag', 'Brand', 'Serial', 'Type', 'Year Built',
+        'Country of Origin', 'Ownership', 'Status', 'Friction Score', 'ROI Health',
+        'Purchase Price', 'Moving Cost', 'Parts Cost', 'Labor Cost', 'Marketing Cost',
+        'Total Invested', 'Est Sale Price', 'Projected Profit', 'Actual Sale Price',
+        'Finish Plan', 'Selling Channel', 'Lane', 'Notes',
+      ];
+      const rows = pianos.map(p => {
+        const exp = expMap[p.id] || {};
+        const totalInvested = (exp.purchase_price || 0) + (exp.moving_cost || 0) + (exp.parts_cost || 0) + (exp.labor_cost || 0) + (exp.marketing_cost || 0);
+        const projectedProfit = exp.estimated_sale_price ? exp.estimated_sale_price - totalInvested : '';
+        return [
+          p.inventory_id, p.tag, p.color_tag, p.brand, p.serial_number, p.piano_type,
+          p.year_built, p.country_of_origin, p.ownership_category, p.status,
+          String(p.friction_score ?? ''), p.roi_health,
+          String(exp.purchase_price ?? ''), String(exp.moving_cost ?? ''),
+          String(exp.parts_cost ?? ''), String(exp.labor_cost ?? ''),
+          String(exp.marketing_cost ?? ''), String(totalInvested || ''),
+          String(exp.estimated_sale_price ?? ''), String(projectedProfit),
+          String(exp.actual_sale_price ?? ''),
+          p.finish_plan, p.selling_channel, p.lane, p.private_notes,
+        ];
+      });
+      generateCSV(headers, rows);
+      toast({ title: 'Inventory exported' });
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleExportTasks = async () => {
+    setExporting('tasks');
+    try {
+      const { data: tasks } = await supabase.from('restoration_tasks').select('*, pianos!restoration_tasks_piano_id_fkey(brand, inventory_id)');
+      const headers = ['Piano ID', 'Brand', 'Task', 'Category', 'Status', 'Assignee', 'Hours', 'Parts', 'Notes'];
+      const rows = (tasks ?? []).map((t: any) => [
+        t.pianos?.inventory_id ?? '', t.pianos?.brand ?? '', t.title, t.category, t.status,
+        t.assignee, String(t.labor_hours ?? ''), t.parts_used, t.notes,
+      ]);
+      generateCSV(headers, rows);
+      toast({ title: 'Tasks exported' });
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleExportExpenses = async () => {
+    setExporting('expenses');
+    try {
+      const { data: expenses } = await supabase.from('expenses').select('*, pianos!expenses_piano_id_fkey(brand, inventory_id)');
+      const headers = ['Piano ID', 'Brand', 'Purchase', 'Moving', 'Parts', 'Labor Cost', 'Labor Hours', 'Marketing', 'Est Sale', 'Actual Sale', 'Notes'];
+      const rows = (expenses ?? []).map((e: any) => [
+        e.pianos?.inventory_id ?? '', e.pianos?.brand ?? '',
+        String(e.purchase_price ?? ''), String(e.moving_cost ?? ''),
+        String(e.parts_cost ?? ''), String(e.labor_cost ?? ''),
+        String(e.labor_hours ?? ''), String(e.marketing_cost ?? ''),
+        String(e.estimated_sale_price ?? ''), String(e.actual_sale_price ?? ''),
+        e.notes,
+      ]);
+      generateCSV(headers, rows);
+      toast({ title: 'Expenses exported' });
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        Export your full inventory, expenses, and task data to CSV.
+      </p>
+      <div className="flex flex-col gap-2">
+        <Button variant="outline" size="sm" onClick={handleExportInventory} disabled={!!exporting}>
+          <Download className="h-4 w-4 mr-1.5" />
+          {exporting === 'inventory' ? 'Exporting...' : 'Export Inventory'}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleExportTasks} disabled={!!exporting}>
+          <Download className="h-4 w-4 mr-1.5" />
+          {exporting === 'tasks' ? 'Exporting...' : 'Export Tasks'}
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleExportExpenses} disabled={!!exporting}>
+          <Download className="h-4 w-4 mr-1.5" />
+          {exporting === 'expenses' ? 'Exporting...' : 'Export Expenses'}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { isAdmin } = useAuth();
+  const [stagesExpanded, setStagesExpanded] = useState(false);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto">
@@ -148,18 +264,21 @@ export default function SettingsPage() {
 
         <section className="bg-card rounded-xl border p-6">
           <h2 className="font-heading text-lg font-semibold mb-4">Renovation Stages</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Customize the stages pianos move through during restoration. Default stages are pre-configured.
-          </p>
-          <Button variant="outline" size="sm">Customize Stages</Button>
+          {!stagesExpanded ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-4">
+                Customize the stages pianos move through during restoration. Default stages are pre-configured.
+              </p>
+              <Button variant="outline" size="sm" onClick={() => setStagesExpanded(true)}>Customize Stages</Button>
+            </>
+          ) : (
+            <WorkflowStagesManager />
+          )}
         </section>
 
         <section className="bg-card rounded-xl border p-6">
           <h2 className="font-heading text-lg font-semibold mb-4">Data Export</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Export your full inventory, expenses, and sales data to CSV.
-          </p>
-          <Button variant="outline" size="sm">Export All Data</Button>
+          <ExportSection />
         </section>
       </div>
     </div>

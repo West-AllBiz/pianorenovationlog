@@ -135,6 +135,9 @@ function PianoProgressCard({ piano, tasks }: { piano: DbPiano; tasks: TaskRow[] 
         isArchive && !expanded ? 'opacity-60' : ''
       }`}
     >
+      {/* Photo banner */}
+      <PianoPhotosBanner pianoId={piano.id} />
+
       {/* Header */}
       <button
         className="w-full text-left p-3 flex flex-col gap-0.5"

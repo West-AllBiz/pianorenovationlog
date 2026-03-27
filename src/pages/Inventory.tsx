@@ -92,6 +92,7 @@ export default function Inventory() {
         {filtered.map((piano, i) => (
           <motion.div key={piano.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
             <Link to={`/piano/${piano.id}`} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 rounded-lg border bg-card p-4 hover:shadow-sm transition-shadow">
+              <PianoPhotoThumbnail pianoId={piano.id} className="w-12 h-12 flex-shrink-0 hidden sm:block" />
               {piano.color_tag && (
                 <div className="w-3 h-3 rounded-full flex-shrink-0 hidden sm:block" style={{ backgroundColor: COLOR_TAG_HEX[piano.color_tag as ColorTag] || '#94a3b8' }} />
               )}
