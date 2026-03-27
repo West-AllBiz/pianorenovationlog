@@ -370,7 +370,7 @@ export default function RenovationBoard() {
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[481px]:grid-cols-2 xl:grid-cols-3 gap-4">
         {filtered.map(piano => (
           <PianoProgressCard
             key={piano.id}
