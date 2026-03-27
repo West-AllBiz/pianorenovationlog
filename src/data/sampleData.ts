@@ -7,6 +7,8 @@ import {
 export const sampleTeam: TeamMember[] = [
   { id: 'u1', name: 'Nick', email: 'nick@nickspiano.com', role: 'admin', avatar: null, assignedPianos: 10 },
   { id: 'u2', name: 'Krista', email: 'krista@nickspiano.com', role: 'admin', avatar: null, assignedPianos: 0 },
+  { id: 'u3', name: 'Sawyer', email: 'sawyer@nickspiano.com', role: 'contributor', avatar: null, assignedPianos: 0 },
+  { id: 'u4', name: 'Mandy', email: 'mandy@nickspiano.com', role: 'contributor', avatar: null, assignedPianos: 0 },
 ];
 
 export const samplePianos: Piano[] = [
