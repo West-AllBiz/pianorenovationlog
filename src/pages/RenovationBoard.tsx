@@ -86,6 +86,15 @@ function useAllTasks() {
   });
 }
 
+function CompactCatStatus(catTasks: TaskRow[]) {
+  if (catTasks.length === 0) return null;
+  const done = catTasks.filter(t => t.status === 'done').length;
+  if (done === catTasks.length) return <span className="text-success">✓</span>;
+  if (catTasks.some(t => t.status === 'blocked')) return <span className="text-destructive">●</span>;
+  if (catTasks.some(t => t.status === 'in_progress')) return <span className="text-primary">●</span>;
+  return null;
+}
+
 function PianoProgressCard({ piano, tasks }: { piano: DbPiano; tasks: TaskRow[] }) {
   const ownership = piano.ownership_category as OwnershipCategory;
   const isArchive = ownership === 'restoration_archive';
@@ -121,28 +130,28 @@ function PianoProgressCard({ piano, tasks }: { piano: DbPiano; tasks: TaskRow[] 
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-lg border bg-card overflow-hidden border-l-[3px] ${borderClass} ${
+      className={`rounded-lg border bg-card overflow-hidden border-l-[3px] ${borderClass} flex flex-col min-h-[280px] ${
         isArchive && !expanded ? 'opacity-60' : ''
       }`}
     >
-      {/* Header — always visible */}
+      {/* Header */}
       <button
-        className="w-full text-left p-4 flex flex-col gap-1"
+        className="w-full text-left p-3 flex flex-col gap-0.5"
         onClick={() => isArchive && setExpanded(e => !e)}
       >
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
             <span className="font-mono text-xs text-primary">{piano.inventory_id}</span>
-            <span className="text-muted-foreground text-xs">·</span>
+            <span className="text-muted-foreground text-[10px]">·</span>
             <span className="font-heading font-semibold text-sm text-foreground truncate">{piano.brand}</span>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {frictionDots(piano.friction_score)}
-            {isArchive && (expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />)}
+            {isArchive && (expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />)}
           </div>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11px] text-muted-foreground truncate">
             {pianoTypeLabel} · {piano.year_built || '—'}
             {isClient && ' · Client: Mike'}
           </span>
@@ -150,23 +159,23 @@ function PianoProgressCard({ piano, tasks }: { piano: DbPiano; tasks: TaskRow[] 
             {ROI_HEALTH_LABELS[roiKey]}
           </Badge>
         </div>
-        <Badge variant="outline" className="w-fit text-[10px] mt-1 border-primary/30 text-primary">
+        <Badge variant="outline" className="w-fit text-[10px] mt-0.5 border-primary/30 text-primary">
           {statusLabel}
         </Badge>
       </button>
 
-      {/* Body — collapsible for archive */}
+      {/* Body */}
       {expanded && (
-        <div className="px-4 pb-4 space-y-3">
-          {/* Special alerts */}
+        <div className="px-3 pb-3 space-y-2 flex-1 flex flex-col">
+          {/* Alerts */}
           {isClient && piano.status === 'final_qc' && (
-            <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-              <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+            <div className="flex items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
               Invoice pending — action required
             </div>
           )}
           {isDonation && (
-            <div className="text-xs text-mission bg-mission/10 px-3 py-2 rounded-md">
+            <div className="text-[11px] text-mission bg-mission/10 px-2 py-1.5 rounded-md">
               Keys for Kids — mission placement pending
             </div>
           )}
@@ -174,8 +183,8 @@ function PianoProgressCard({ piano, tasks }: { piano: DbPiano; tasks: TaskRow[] 
           {/* Overall progress */}
           {total > 0 ? (
             <div>
-              <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Overall Progress</span>
+              <div className="flex items-center justify-between text-[11px] mb-1">
+                <span className="text-muted-foreground">Progress</span>
                 <span className="font-mono text-muted-foreground">{complete}/{total} · {pct}%</span>
               </div>
               <div className="h-2 rounded-full bg-secondary overflow-hidden">
@@ -186,74 +195,67 @@ function PianoProgressCard({ piano, tasks }: { piano: DbPiano; tasks: TaskRow[] 
               </div>
             </div>
           ) : (
-            <div className="text-center py-3">
-              <p className="text-xs text-muted-foreground mb-2">No tasks assigned yet.</p>
-              <Button size="sm" variant="outline" className="text-xs" asChild>
+            <div className="text-center py-2">
+              <p className="text-[11px] text-muted-foreground mb-1.5">No tasks assigned yet.</p>
+              <Button size="sm" variant="outline" className="text-[11px] h-7" asChild>
                 <Link to={`/piano/${piano.id}`}>Apply Standard Tasks</Link>
               </Button>
             </div>
           )}
 
-          {/* Category breakdown */}
+          {/* Category breakdown — compact */}
           {grouped.length > 0 && (
-            <div className="space-y-1.5">
+            <div className="space-y-0.5">
               {grouped.map(({ category, tasks: catTasks }) => {
                 const catDone = catTasks.filter(t => t.status === 'done').length;
                 const catPct = Math.round((catDone / catTasks.length) * 100);
-                const st = categoryStatus(catTasks);
                 return (
-                  <div key={category} className="flex items-center gap-2 text-xs">
-                    <span className="w-[100px] sm:w-[130px] truncate text-muted-foreground">{category}</span>
-                    <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+                  <div key={category} className="flex items-center gap-1.5 font-mono text-[11px]">
+                    <span className="w-[72px] truncate text-muted-foreground">{category}</span>
+                    <div className="w-10 h-1 rounded-full bg-secondary overflow-hidden flex-shrink-0">
                       <div
                         className={`h-full rounded-full ${isDonation ? 'bg-mission' : progressBarColor(catPct)}`}
                         style={{ width: `${catPct}%` }}
                       />
                     </div>
-                    <span className="font-mono w-8 text-right text-muted-foreground">{catDone}/{catTasks.length}</span>
-                    <span className={`w-14 text-right ${st.cls}`}>{st.label}</span>
+                    <span className="text-muted-foreground w-7 text-right">{catDone}/{catTasks.length}</span>
+                    <span className="w-3 text-center">{CompactCatStatus(catTasks)}</span>
                   </div>
                 );
               })}
             </div>
           )}
 
-          {/* Active tasks */}
+          {/* Active tasks — pill tags */}
           {activeTasks.length > 0 && (
-            <div>
-              <div className="flex items-center gap-1.5 text-xs text-primary mb-1">
-                <Wrench className="h-3 w-3" /> Active now
-              </div>
+            <div className="flex flex-wrap gap-1">
               {activeTasks.map(t => (
-                <p key={t.id} className="text-xs text-muted-foreground pl-4">
-                  · {t.title}{t.assignee ? ` — ${t.assignee}` : ''}
-                </p>
+                <span key={t.id} className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 font-mono text-[11px] text-primary">
+                  <Wrench className="h-2.5 w-2.5" />{t.title}
+                </span>
               ))}
             </div>
           )}
 
-          {/* Blocked tasks */}
+          {/* Blocked tasks — pill tags */}
           {blockedTasks.length > 0 && (
-            <div>
-              <div className="flex items-center gap-1.5 text-xs text-destructive mb-1">
-                <AlertTriangle className="h-3 w-3" /> Blocked
-              </div>
+            <div className="flex flex-wrap gap-1">
               {blockedTasks.map(t => (
-                <p key={t.id} className="text-xs text-muted-foreground pl-4">
-                  · {t.title} (awaiting parts)
-                </p>
+                <span key={t.id} className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 font-mono text-[11px] text-destructive">
+                  <AlertTriangle className="h-2.5 w-2.5" />{t.title}
+                </span>
               ))}
             </div>
           )}
 
-          {/* Footer */}
-          <div className="flex items-center justify-between pt-1">
+          {/* Footer — pushed to bottom */}
+          <div className="flex items-center justify-between pt-2 mt-auto border-t border-border">
             <span className="text-[10px] text-muted-foreground">
-              Updated {new Date(piano.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {new Date(piano.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
             <Link
               to={`/piano/${piano.id}`}
-              className="text-xs font-medium text-primary hover:underline"
+              className="text-[11px] font-medium text-primary hover:underline"
             >
               → Details
             </Link>
@@ -370,7 +372,7 @@ export default function RenovationBoard() {
       </div>
 
       {/* Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[481px]:grid-cols-2 xl:grid-cols-3 gap-4">
         {filtered.map(piano => (
           <PianoProgressCard
             key={piano.id}
