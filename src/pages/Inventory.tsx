@@ -8,6 +8,7 @@ import { usePianos } from '@/hooks/usePianos';
 import { useAuth } from '@/hooks/useAuth';
 import { AddPianoDialog } from '@/components/AddPianoDialog';
 import { STATUS_LABELS, STATUS_COLORS, PIANO_TYPE_LABELS, OWNERSHIP_LABELS, OWNERSHIP_COLORS, COLOR_TAG_HEX } from '@/types/piano';
+import { PianoPhotoThumbnail } from '@/components/PianoPhotos';
 import type { PianoStatus, OwnershipCategory, ColorTag, PianoType } from '@/types/piano';
 
 export default function Inventory() {
