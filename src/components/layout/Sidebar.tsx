@@ -8,7 +8,7 @@ const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/inventory', icon: Piano, label: 'Inventory' },
   { to: '/triage', icon: Scale, label: 'Acquisition Triage' },
-  { to: '/renovation', icon: Kanban, label: 'Renovation Board' },
+  { to: '/renovation', icon: Kanban, label: 'Renovation Progress' },
   { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
   { to: '/team', icon: Users, label: 'Team' },
