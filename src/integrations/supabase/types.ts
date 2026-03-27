@@ -409,6 +409,50 @@ export type Database = {
           },
         ]
       }
+      piano_photos: {
+        Row: {
+          caption: string | null
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          piano_id: string
+          sort_order: number | null
+          storage_path: string
+          uploaded_by: string | null
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          piano_id: string
+          sort_order?: number | null
+          storage_path: string
+          uploaded_by?: string | null
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          piano_id?: string
+          sort_order?: number | null
+          storage_path?: string
+          uploaded_by?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "piano_photos_piano_id_fkey"
+            columns: ["piano_id"]
+            isOneToOne: false
+            referencedRelation: "pianos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pianos: {
         Row: {
           asking_price: number | null
@@ -666,6 +710,36 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      workflow_stages: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          sort_order: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          sort_order?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          sort_order?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
