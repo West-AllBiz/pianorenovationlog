@@ -306,6 +306,7 @@ export default function PianoDetail() {
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
         {activeTab === 'Overview' && (
           <div className="space-y-0">
+            <PianoPhotosSection pianoId={piano.id} />
             <Section title="Piano Details">
               <div className="grid sm:grid-cols-2 gap-x-6">
                 <InlineField label="Brand" value={piano.brand} onSave={v => handleFieldUpdate('brand', v, piano.brand)} canEdit={canEdit} />
