@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Loader2, Wrench, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { PianoPhotosBanner } from '@/components/PianoPhotos';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePianos, type DbPiano } from '@/hooks/usePianos';
