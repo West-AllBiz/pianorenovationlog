@@ -412,6 +412,7 @@ export type Database = {
       piano_photos: {
         Row: {
           caption: string | null
+          category: string
           created_at: string | null
           id: string
           is_primary: boolean | null
@@ -423,6 +424,7 @@ export type Database = {
         }
         Insert: {
           caption?: string | null
+          category?: string
           created_at?: string | null
           id?: string
           is_primary?: boolean | null
@@ -434,6 +436,7 @@ export type Database = {
         }
         Update: {
           caption?: string | null
+          category?: string
           created_at?: string | null
           id?: string
           is_primary?: boolean | null
