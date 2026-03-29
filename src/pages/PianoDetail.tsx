@@ -697,40 +697,7 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
                   {!isCollapsed && (
                     <div className="divide-y">
                       {group.tasks.map((t: any) => (
-                        <div key={t.id} className="p-3 hover:bg-muted/10 transition-colors">
-                          <div className="flex items-start justify-between gap-3 mb-1">
-                            <span className="font-medium text-sm">{t.title}</span>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {editable ? (
-                                <Select value={t.status} onValueChange={v => handleUpdateTask(t.id, { status: v, ...(v === 'done' ? { completion_date: new Date().toISOString().split('T')[0] } : {}) })}>
-                                  <SelectTrigger className={`h-7 text-xs ${TASK_STATUS_STYLES[t.status] || 'bg-muted text-muted-foreground'}`}>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="todo">Pending</SelectItem>
-                                    <SelectItem value="in_progress">In Progress</SelectItem>
-                                    <SelectItem value="blocked">Awaiting Parts</SelectItem>
-                                    <SelectItem value="done">Complete</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              ) : (
-                                <span className={`status-badge text-xs ${TASK_STATUS_STYLES[t.status] || ''}`}>{TASK_STATUS_DISPLAY[t.status] || t.status}</span>
-                              )}
-                              {editable && (
-                                <button onClick={() => handleDeleteTask(t.id, t.title)} className="p-1 hover:bg-destructive/10 rounded">
-                                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
-                            <div>Assigned: <span className="text-foreground">{t.assignee || '—'}</span></div>
-                            <div>Hours: <span className="text-foreground font-mono">{t.labor_hours}h</span></div>
-                            <div>Parts: <span className="text-foreground">{t.parts_used || 'None'}</span></div>
-                            {t.completion_date && <div>Completed: <span className="text-foreground">{t.completion_date}</span></div>}
-                          </div>
-                          {t.notes && <p className="text-xs text-muted-foreground mt-1 italic">{t.notes}</p>}
-                        </div>
+                        <TaskRow key={t.id} task={t} editable={editable} onUpdate={handleUpdateTask} onDelete={handleDeleteTask} />
                       ))}
                     </div>
                   )}
