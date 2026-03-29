@@ -531,6 +531,106 @@ function getCategoryGroup(cat: string): string {
   return 'other';
 }
 
+// ── Sanding grit options ─────────────────────────────────
+const SANDING_GRITS: Record<string, string[]> = {
+  'Initial Sanding (40-240 grit)': ['40', '80', '120', '240'],
+  'Medium Sanding (400-1000 grit)': ['400', '600', '800', '1000'],
+  'Fine Sanding (2000-5000 grit)': ['2000', '3000', '4000', '5000'],
+};
+
+// ── Task Row Component ───────────────────────────────────
+function TaskRow({ task: t, editable, onUpdate, onDelete }: {
+  task: any; editable: boolean;
+  onUpdate: (id: string, updates: Record<string, any>) => Promise<void>;
+  onDelete: (id: string, title: string) => Promise<void>;
+}) {
+  const [showNotes, setShowNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState(t.notes || '');
+  const grits = SANDING_GRITS[t.title];
+
+  return (
+    <div className="p-3 hover:bg-muted/10 transition-colors">
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <span className="font-medium text-sm">{t.title}</span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {editable ? (
+            <Select value={t.status} onValueChange={v => onUpdate(t.id, { status: v, ...(v === 'done' ? { completion_date: new Date().toISOString().split('T')[0] } : {}) })}>
+              <SelectTrigger className={`h-7 text-xs ${TASK_STATUS_STYLES[t.status] || 'bg-muted text-muted-foreground'}`}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todo">Pending</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="blocked">Awaiting Parts</SelectItem>
+                <SelectItem value="done">Complete</SelectItem>
+              </SelectContent>
+            </Select>
+          ) : (
+            <span className={`status-badge text-xs ${TASK_STATUS_STYLES[t.status] || ''}`}>{TASK_STATUS_DISPLAY[t.status] || t.status}</span>
+          )}
+          {editable && (
+            <button onClick={() => onDelete(t.id, t.title)} className="p-1 hover:bg-destructive/10 rounded">
+              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
+        <div>Assigned: <span className="text-foreground">{t.assignee || '—'}</span></div>
+        <div>Hours: <span className="text-foreground font-mono">{t.labor_hours}h</span></div>
+        <div>Parts: <span className="text-foreground">{t.parts_used || 'None'}</span></div>
+        {t.completion_date && <div>Completed: <span className="text-foreground">{t.completion_date}</span></div>}
+      </div>
+
+      {/* Sanding grit dropdown */}
+      {grits && editable && (
+        <div className="mt-2">
+          <Select value={t.parts_used || ''} onValueChange={v => onUpdate(t.id, { parts_used: v })}>
+            <SelectTrigger className="h-7 w-40 text-xs">
+              <SelectValue placeholder="Select grit" />
+            </SelectTrigger>
+            <SelectContent>
+              {grits.map(g => <SelectItem key={g} value={`${g} grit`}>{g} grit</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {/* Notes toggle + inline editor */}
+      <div className="mt-1.5">
+        <button
+          onClick={() => { setShowNotes(!showNotes); setNotesDraft(t.notes || ''); }}
+          className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          {t.notes ? '📝 View/Edit Notes' : '+ Add Notes'}
+        </button>
+        {showNotes && (
+          <div className="mt-1.5 space-y-1.5">
+            {editable ? (
+              <>
+                <Textarea
+                  value={notesDraft}
+                  onChange={e => setNotesDraft(e.target.value)}
+                  placeholder="Add repair notes, observations…"
+                  rows={3}
+                  className="text-xs min-h-[60px]"
+                />
+                <div className="flex gap-1.5">
+                  <Button size="sm" className="h-6 text-[11px] px-2" onClick={() => { onUpdate(t.id, { notes: notesDraft }); setShowNotes(false); }}>Save</Button>
+                  <Button size="sm" variant="outline" className="h-6 text-[11px] px-2" onClick={() => setShowNotes(false)}>Cancel</Button>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground italic whitespace-pre-wrap">{t.notes || 'No notes yet.'}</p>
+            )}
+          </div>
+        )}
+        {!showNotes && t.notes && <p className="text-xs text-muted-foreground mt-0.5 italic line-clamp-1">{t.notes}</p>}
+      </div>
+    </div>
+  );
+}
+
 // ── Restoration Content ──────────────────────────────────
 function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: editable }: {
   pianoId: string; tasks: any[]; performanceProfile: any; canEdit: boolean;
