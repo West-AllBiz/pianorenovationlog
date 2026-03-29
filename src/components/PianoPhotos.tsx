@@ -6,6 +6,14 @@ import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Star, Loader2, ImageIcon, X } from 'lucide-react';
 
+type PhotoCategory = 'acquired' | 'renovation' | 'finished';
+
+const CATEGORY_LABELS: Record<PhotoCategory, string> = {
+  acquired: 'When Acquired',
+  renovation: 'Renovation',
+  finished: 'Finished',
+};
+
 type PianoPhoto = {
   id: string;
   piano_id: string;
@@ -16,6 +24,7 @@ type PianoPhoto = {
   sort_order: number;
   uploaded_by: string | null;
   created_at: string;
+  category: PhotoCategory;
 };
 
 export function usePianoPhotos(pianoId: string | undefined) {
@@ -63,8 +72,11 @@ export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<PhotoCategory>('acquired');
+  const [uploadCategory, setUploadCategory] = useState<PhotoCategory>('acquired');
 
-  const primary = photos.find(p => p.is_primary) || photos[0];
+  const categoryPhotos = photos.filter(p => (p.category || 'acquired') === activeTab);
+  const primary = categoryPhotos.find(p => p.is_primary) || categoryPhotos[0];
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -83,15 +95,16 @@ export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
           .from('piano-photos')
           .getPublicUrl(fileName);
 
-        const isPrimary = photos.length === 0;
+        const isPrimary = categoryPhotos.length === 0;
         await supabase.from('piano_photos').insert({
           piano_id: pianoId,
           storage_path: fileName,
           url: publicUrl,
           is_primary: isPrimary,
-          sort_order: photos.length,
+          sort_order: categoryPhotos.length,
           uploaded_by: user.id,
-        });
+          category: uploadCategory,
+        } as any);
       }
       qc.invalidateQueries({ queryKey: ['piano_photos', pianoId] });
       toast({ title: 'Photos uploaded' });
@@ -111,21 +124,27 @@ export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
   };
 
   const handleDelete = async (photo: PianoPhoto) => {
-    if (!confirm('Delete this photo?')) return;
     await supabase.storage.from('piano-photos').remove([photo.storage_path]);
     await supabase.from('piano_photos').delete().eq('id', photo.id);
     qc.invalidateQueries({ queryKey: ['piano_photos', pianoId] });
     toast({ title: 'Photo deleted' });
   };
 
+  const startUpload = (cat: PhotoCategory) => {
+    setUploadCategory(cat);
+    fileRef.current?.click();
+  };
+
   if (isLoading) return null;
+
+  const categories: PhotoCategory[] = ['acquired', 'renovation', 'finished'];
 
   return (
     <div className="mb-6 min-w-0">
-      <div className="flex items-center justify-between mb-3 pb-2 border-b">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-border">
         <h3 className="font-heading font-semibold text-sm uppercase tracking-wider text-muted-foreground">Photos</h3>
         {canEdit && (
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => fileRef.current?.click()} disabled={uploading}>
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => startUpload(activeTab)} disabled={uploading}>
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
             Add
           </Button>
@@ -133,11 +152,31 @@ export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
         <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple className="hidden" onChange={handleUpload} />
       </div>
 
-      {photos.length === 0 ? (
+      {/* Category tabs */}
+      <div className="flex gap-1 mb-3">
+        {categories.map(cat => {
+          const count = photos.filter(p => (p.category || 'acquired') === cat).length;
+          return (
+            <button
+              key={cat}
+              onClick={() => setActiveTab(cat)}
+              className={`px-3 py-1.5 rounded-md text-xs font-mono transition-colors ${
+                activeTab === cat
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {CATEGORY_LABELS[cat]} ({count})
+            </button>
+          );
+        })}
+      </div>
+
+      {categoryPhotos.length === 0 ? (
         <div className="flex items-center justify-center h-32 bg-secondary/50 rounded-lg border border-dashed border-border">
           <div className="text-center text-muted-foreground">
             <ImageIcon className="h-8 w-8 mx-auto mb-1" />
-            <p className="text-xs">No photos yet</p>
+            <p className="text-xs">No {CATEGORY_LABELS[activeTab].toLowerCase()} photos yet</p>
           </div>
         </div>
       ) : (
@@ -148,9 +187,9 @@ export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
               <img src={primary.url} alt="Primary" className="w-full max-h-[300px] object-cover" />
             </div>
           )}
-          {/* Thumbnail strip */}
+          {/* Thumbnail strip with delete */}
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {photos.map(photo => (
+            {categoryPhotos.map(photo => (
               <div key={photo.id} className="relative flex-shrink-0 group">
                 <img
                   src={photo.url}
@@ -159,12 +198,20 @@ export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
                   onClick={() => setLightbox(photo.url)}
                 />
                 {canEdit && (
-                  <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md flex items-center justify-center gap-1">
-                    <button onClick={(e) => { e.stopPropagation(); handleSetPrimary(photo.id); }} className="p-0.5 hover:text-primary" title="Set as primary">
-                      <Star className={`h-3 w-3 ${photo.is_primary ? 'fill-primary text-primary' : ''}`} />
+                  <div className="absolute -top-1.5 -right-1.5 flex gap-0.5">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleSetPrimary(photo.id); }}
+                      className="bg-background/90 rounded-full p-0.5 shadow border border-border hover:border-primary"
+                      title="Set as primary"
+                    >
+                      <Star className={`h-3 w-3 ${photo.is_primary ? 'fill-primary text-primary' : 'text-muted-foreground'}`} />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); handleDelete(photo); }} className="p-0.5 hover:text-destructive" title="Delete">
-                      <Trash2 className="h-3 w-3" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(photo); }}
+                      className="bg-destructive/90 rounded-full p-0.5 shadow hover:bg-destructive"
+                      title="Delete photo"
+                    >
+                      <Trash2 className="h-3 w-3 text-destructive-foreground" />
                     </button>
                   </div>
                 )}
