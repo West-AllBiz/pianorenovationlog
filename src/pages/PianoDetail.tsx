@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Edit, Check, X, Pencil, Plus, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, X, Pencil, Plus, Trash2, Loader2 } from 'lucide-react';
 import { PianoPhotosSection } from '@/components/PianoPhotos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,7 @@ const TASK_STATUS_DISPLAY: Record<string, string> = {
   done: 'Complete', in_progress: 'In Progress', todo: 'Pending', blocked: 'Awaiting Parts',
 };
 
-// ── Inline Edit Field ────────────────────────────────────
+// ── Inline Edit Field (auto-save on blur) ────────────────
 function InlineField({ label, value, onSave, type = 'text', options, canEdit: editable = true }: {
   label: string; value: string; onSave: (val: string) => void;
   type?: 'text' | 'select' | 'textarea'; options?: Record<string, string>; canEdit?: boolean;
@@ -71,12 +71,11 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
       <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono">{label}</span>
         <div className="flex w-full min-w-0 items-center gap-1 sm:w-auto sm:max-w-[60%]">
-          <Select value={draft} onValueChange={v => { setDraft(v); }}>
+          <Select value={draft} onValueChange={v => { setDraft(v); onSave(v); setEditing(false); }}>
             <SelectTrigger className="h-8 w-full min-w-0 text-xs sm:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(options).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
           </Select>
-          <button onClick={save} className="p-1 hover:bg-success/10 rounded flex-shrink-0"><Check className="h-3.5 w-3.5 text-success" /></button>
-          <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded flex-shrink-0"><X className="h-3.5 w-3.5 text-destructive" /></button>
+          <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded flex-shrink-0"><X className="h-3.5 w-3.5 text-muted-foreground" /></button>
         </div>
       </div>
     );
@@ -87,13 +86,11 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
       <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono shrink-0">{label}</span>
       <div className="flex w-full min-w-0 items-start gap-1 sm:w-auto sm:max-w-[60%] sm:items-center">
         {type === 'textarea' ? (
-          <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="min-h-[100px] w-full min-w-0 text-sm" onKeyDown={e => { if (e.key === 'Escape') cancel(); }} />
+          <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="min-h-[100px] w-full min-w-0 text-sm" onBlur={save} onKeyDown={e => { if (e.key === 'Escape') cancel(); }} />
         ) : (
           <Input value={draft} onChange={e => setDraft(e.target.value)} className="h-8 w-full min-w-0 text-sm sm:w-40"
-            onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }} autoFocus />
+            onBlur={save} onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }} autoFocus />
         )}
-        <button onClick={save} className="p-1 hover:bg-success/10 rounded flex-shrink-0"><Check className="h-3.5 w-3.5 text-success" /></button>
-        <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded flex-shrink-0"><X className="h-3.5 w-3.5 text-destructive" /></button>
       </div>
     </div>
   );
@@ -487,15 +484,20 @@ export default function PianoDetail() {
   );
 }
 
-// ── Editable Textarea ────────────────────────────────────
+// ── Editable Textarea (auto-save on blur) ────────────────
 function EditableTextarea({ value, onSave }: { value: string; onSave: (v: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
+  const handleBlur = () => {
+    if (draft !== value) onSave(draft);
+    setEditing(false);
+  };
+
   if (!editing) {
     return (
       <div className="group min-w-0 cursor-pointer" onClick={() => { setDraft(value); setEditing(true); }}>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{value}</p>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{value || 'Click to add notes…'}</p>
         <p className="text-xs text-muted-foreground/50 mt-1 opacity-0 group-hover:opacity-100">Click to edit</p>
       </div>
     );
@@ -503,11 +505,8 @@ function EditableTextarea({ value, onSave }: { value: string; onSave: (v: string
 
   return (
     <div>
-      <Textarea value={draft} onChange={e => setDraft(e.target.value)} rows={6} className="w-full min-w-0 text-sm" autoFocus />
-      <div className="mt-2 flex flex-wrap gap-2">
-        <Button size="sm" onClick={() => { onSave(draft); setEditing(false); }}>Save</Button>
-        <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
-      </div>
+      <Textarea value={draft} onChange={e => setDraft(e.target.value)} rows={6} className="w-full min-w-0 text-sm" autoFocus onBlur={handleBlur} />
+      <p className="text-xs text-muted-foreground mt-1">Auto-saves when you click away</p>
     </div>
   );
 }
@@ -620,11 +619,11 @@ function TaskRow({ task: t, editable, onUpdate, onDelete }: {
                   placeholder="Add repair notes, observations…"
                   rows={3}
                   className="text-xs min-h-[60px]"
+                  onBlur={() => {
+                    if (notesDraft !== (t.notes || '')) onUpdate(t.id, { notes: notesDraft });
+                  }}
                 />
-                <div className="flex gap-1.5">
-                  <Button size="sm" className="h-6 text-[11px] px-2" onClick={() => { onUpdate(t.id, { notes: notesDraft }); setShowNotes(false); }}>Save</Button>
-                  <Button size="sm" variant="outline" className="h-6 text-[11px] px-2" onClick={() => setShowNotes(false)}>Cancel</Button>
-                </div>
+                <p className="text-[10px] text-muted-foreground">Auto-saves when you click away</p>
               </>
             ) : (
               <p className="text-xs text-muted-foreground italic whitespace-pre-wrap">{t.notes || 'No notes yet.'}</p>
@@ -826,54 +825,33 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
   );
 }
 
-// ── Expenses Content ─────────────────────────────────────
+// ── Expenses Content (auto-save on blur) ─────────────────
 function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canEdit: editable }: {
   pianoId: string; expenses: any; clientRecord: any; donationRecord: any; canEdit: boolean;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState<any>(null);
   const qc = useQueryClient();
   const { user, profile } = useAuth();
 
-  const startEdit = () => {
-    if (expenses) {
-      setForm({ ...expenses });
-    } else {
-      setForm({ piano_id: pianoId, purchase_price: 0, moving_cost: 0, parts_cost: 0, labor_hours: 0, labor_cost: 0, marketing_cost: 0, estimated_sale_price: 0 });
-    }
-    setEditing(true);
-  };
-
-  const handleSave = async () => {
-    const total = (parseFloat(form.purchase_price) || 0) + (parseFloat(form.moving_cost) || 0) +
-      (parseFloat(form.parts_cost) || 0) + (parseFloat(form.labor_cost) || 0) + (parseFloat(form.marketing_cost) || 0);
-    const data = {
-      purchase_price: parseFloat(form.purchase_price) || 0,
-      moving_cost: parseFloat(form.moving_cost) || 0,
-      parts_cost: parseFloat(form.parts_cost) || 0,
-      labor_hours: parseFloat(form.labor_hours) || 0,
-      labor_cost: parseFloat(form.labor_cost) || 0,
-      marketing_cost: parseFloat(form.marketing_cost) || 0,
-      estimated_sale_price: parseFloat(form.estimated_sale_price) || null,
-      actual_sale_price: form.actual_sale_price ? parseFloat(form.actual_sale_price) : null,
-    };
-
+  const handleFieldSave = async (field: string, rawValue: string) => {
+    const value = rawValue === '' ? null : parseFloat(rawValue) || 0;
+    
     if (expenses?.id) {
-      await supabase.from('expenses').update(data).eq('id', expenses.id);
+      await supabase.from('expenses').update({ [field]: value }).eq('id', expenses.id);
     } else {
-      await supabase.from('expenses').insert({ ...data, piano_id: pianoId });
+      await supabase.from('expenses').insert({ piano_id: pianoId, [field]: value });
     }
 
     if (user) {
       await supabase.from('activity_log').insert({
         piano_id: pianoId, user_id: user.id, user_name: profile?.full_name || '',
-        action_description: 'Updated expenses',
+        action_description: `Updated expense: ${field}`,
+        changed_field: field,
+        new_value: String(value ?? ''),
       });
     }
 
     qc.invalidateQueries({ queryKey: ['expenses', pianoId] });
     qc.invalidateQueries({ queryKey: ['activity_log', pianoId] });
-    setEditing(false);
     toast({ title: 'Saved' });
   };
 
@@ -916,83 +894,72 @@ function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canE
     );
   }
 
-  if (editing && form) {
-    const total = (parseFloat(form.purchase_price) || 0) + (parseFloat(form.moving_cost) || 0) +
-      (parseFloat(form.parts_cost) || 0) + (parseFloat(form.labor_cost) || 0) + (parseFloat(form.marketing_cost) || 0);
-    const est = parseFloat(form.estimated_sale_price) || 0;
-    const profit = est - total;
-    const margin = total > 0 ? Math.round((profit / total) * 100) : 0;
+  const data = expenses || { purchase_price: 0, moving_cost: 0, parts_cost: 0, labor_hours: 0, labor_cost: 0, marketing_cost: 0, estimated_sale_price: null };
+  const total = (data.purchase_price || 0) + (data.moving_cost || 0) + (data.parts_cost || 0) + (data.labor_cost || 0) + (data.marketing_cost || 0);
+  const est = data.estimated_sale_price || 0;
+  const profit = est - total;
+  const margin = total > 0 ? Math.round((profit / total) * 100) : 0;
 
-    return (
-      <div className="space-y-0">
-        <Section title="Cost Breakdown">
-          <div className="space-y-3">
-            {[
-              ['Purchase Price', 'purchase_price'], ['Moving Cost', 'moving_cost'], ['Parts Cost', 'parts_cost'],
-              ['Labor Hours', 'labor_hours'], ['Labor Cost', 'labor_cost'], ['Marketing', 'marketing_cost'],
-              ['Est. Sale Price', 'estimated_sale_price'],
-            ].map(([label, key]) => (
-              <div key={key as string} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                <span className="text-sm text-muted-foreground">{label as string}</span>
-                <Input type="number" value={form[key as string] ?? ''} onChange={e => setForm((f: any) => ({ ...f, [key as string]: e.target.value }))} className="h-8 w-full text-sm sm:w-32 sm:text-right" />
-              </div>
-            ))}
-          </div>
-        </Section>
-        <Section title="Summary">
-          <div className="space-y-2 text-sm">
-            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-muted-foreground">Total Invested</span><span className="font-mono font-bold">${total.toLocaleString()}</span></div>
-            <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-muted-foreground">Projected Profit</span><span className={`font-mono font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toLocaleString()}</span></div>
-            {margin > 0 && <div className="flex flex-col gap-1 sm:flex-row sm:justify-between"><span className="text-muted-foreground">Margin</span><span className="font-mono">{margin}%</span></div>}
-          </div>
-        </Section>
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSave}>Save</Button>
-          <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+  return (
+    <div className="space-y-0">
+      <Section title="Cost Breakdown">
+        <div className="space-y-3">
+          {([
+            ['Purchase Price', 'purchase_price'], ['Moving Cost', 'moving_cost'], ['Parts Cost', 'parts_cost'],
+            ['Labor Hours', 'labor_hours'], ['Labor Cost', 'labor_cost'], ['Marketing', 'marketing_cost'],
+            ['Est. Sale Price', 'estimated_sale_price'],
+          ] as const).map(([label, key]) => (
+            <ExpenseField key={key} label={label} field={key} value={data[key]} onSave={handleFieldSave} canEdit={editable} />
+          ))}
         </div>
-      </div>
-    );
-  }
-
-  if (expenses) {
-    const total = (expenses.purchase_price || 0) + (expenses.moving_cost || 0) + (expenses.parts_cost || 0) + (expenses.labor_cost || 0) + (expenses.marketing_cost || 0);
-    const profit = (expenses.estimated_sale_price || 0) - total;
-    const margin = total > 0 ? Math.round((profit / total) * 100) : 0;
-
-    return (
-      <div className="space-y-0">
-        <Section title="Cost Breakdown">
-          {editable && <Button size="sm" variant="outline" className="mb-3" onClick={startEdit}><Edit className="h-3.5 w-3.5 mr-1" /> Edit</Button>}
-          <div className="space-y-1.5">
-            {[
-              ['Purchase Price', expenses.purchase_price], ['Moving Cost', expenses.moving_cost],
-              ['Parts Cost', expenses.parts_cost], ['Labor Cost', expenses.labor_cost], ['Marketing', expenses.marketing_cost],
-            ].map(([k, v]) => (
-              <ReadonlyDetailRow key={k as string} label={k as string} value={`$${((v as number) || 0).toLocaleString()}`} valueClassName="font-mono" />
-            ))}
-          </div>
-        </Section>
-        <Section title="Profit Summary">
-          <div className="space-y-3">
-            <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:justify-between"><span className="text-sm font-medium">Total Invested</span><span className="text-sm font-mono font-bold">${total.toLocaleString()}</span></div>
-            <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:justify-between"><span className="text-sm font-medium">Est. Sale Price</span><span className="text-sm font-mono font-bold">${(expenses.estimated_sale_price || 0).toLocaleString()}</span></div>
-            <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm font-medium">Projected Profit</span>
-              <div className="text-left sm:text-right">
-                <span className={`text-lg font-mono font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toLocaleString()}</span>
-                {margin > 0 && <span className="text-xs text-muted-foreground ml-2">{margin}% margin</span>}
-              </div>
+        <p className="text-[10px] text-muted-foreground mt-2">Fields auto-save when you click away</p>
+      </Section>
+      <Section title="Profit Summary">
+        <div className="space-y-3">
+          <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:justify-between"><span className="text-sm font-medium">Total Invested</span><span className="text-sm font-mono font-bold">${total.toLocaleString()}</span></div>
+          <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:justify-between"><span className="text-sm font-medium">Est. Sale Price</span><span className="text-sm font-mono font-bold">${est.toLocaleString()}</span></div>
+          <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <span className="text-sm font-medium">Projected Profit</span>
+            <div className="text-left sm:text-right">
+              <span className={`text-lg font-mono font-bold ${profit >= 0 ? 'text-success' : 'text-destructive'}`}>${profit.toLocaleString()}</span>
+              {margin > 0 && <span className="text-xs text-muted-foreground ml-2">{margin}% margin</span>}
             </div>
           </div>
-        </Section>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+function ExpenseField({ label, field, value, onSave, canEdit }: {
+  label: string; field: string; value: number | null; onSave: (field: string, val: string) => void; canEdit: boolean;
+}) {
+  const [draft, setDraft] = useState(String(value ?? ''));
+  const [focused, setFocused] = useState(false);
+
+  const handleBlur = () => {
+    setFocused(false);
+    const newVal = draft === '' ? '' : String(parseFloat(draft) || 0);
+    if (newVal !== String(value ?? '')) {
+      onSave(field, draft);
+    }
+  };
+
+  if (!canEdit) {
+    return (
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <span className="text-sm font-mono">${((value as number) || 0).toLocaleString()}</span>
       </div>
     );
   }
 
   return (
-    <div className="text-center py-12 text-muted-foreground">
-      <p>No expenses recorded</p>
-      {editable && <Button variant="outline" size="sm" className="mt-3" onClick={startEdit}>Add Expenses</Button>}
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <Input type="number" value={draft} onChange={e => setDraft(e.target.value)}
+        onFocus={() => setFocused(true)} onBlur={handleBlur}
+        className="h-8 w-full text-sm sm:w-32 sm:text-right" />
     </div>
   );
 }

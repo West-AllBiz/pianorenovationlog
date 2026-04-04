@@ -59,9 +59,9 @@ export function WorkflowStagesManager() {
     toast({ title: 'Stage deleted' });
   };
 
-  const handleSaveOrder = async () => {
-    for (let i = 0; i < stages.length; i++) {
-      await supabase.from('workflow_stages').update({ sort_order: i + 1 }).eq('id', stages[i].id);
+  const handleSaveOrder = async (updatedStages: WorkflowStage[]) => {
+    for (let i = 0; i < updatedStages.length; i++) {
+      await supabase.from('workflow_stages').update({ sort_order: i + 1 }).eq('id', updatedStages[i].id);
     }
     toast({ title: 'Order saved' });
   };
@@ -100,8 +100,6 @@ export function WorkflowStagesManager() {
           <Plus className="h-4 w-4 mr-1" /> Add
         </Button>
       </div>
-
-      <Button size="sm" variant="outline" onClick={handleSaveOrder}>Save Order</Button>
     </div>
   );
 }
