@@ -619,11 +619,11 @@ function TaskRow({ task: t, editable, onUpdate, onDelete }: {
                   placeholder="Add repair notes, observations…"
                   rows={3}
                   className="text-xs min-h-[60px]"
+                  onBlur={() => {
+                    if (notesDraft !== (t.notes || '')) onUpdate(t.id, { notes: notesDraft });
+                  }}
                 />
-                <div className="flex gap-1.5">
-                  <Button size="sm" className="h-6 text-[11px] px-2" onClick={() => { onUpdate(t.id, { notes: notesDraft }); setShowNotes(false); }}>Save</Button>
-                  <Button size="sm" variant="outline" className="h-6 text-[11px] px-2" onClick={() => setShowNotes(false)}>Cancel</Button>
-                </div>
+                <p className="text-[10px] text-muted-foreground">Auto-saves when you click away</p>
               </>
             ) : (
               <p className="text-xs text-muted-foreground italic whitespace-pre-wrap">{t.notes || 'No notes yet.'}</p>
