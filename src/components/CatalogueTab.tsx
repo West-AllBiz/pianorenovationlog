@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,6 @@ interface CatalogueTabProps {
 
 export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice, canEdit }: CatalogueTabProps) {
   const qc = useQueryClient();
-  const [saving, setSaving] = useState(false);
 
   const { data: catalogue, isLoading } = useQuery({
     queryKey: ['catalogue', pianoId],
@@ -44,6 +43,7 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
   const [priceDisplay, setPriceDisplay] = useState('');
   const [showRestorationNotes, setShowRestorationNotes] = useState(false);
   const [restorationNote, setRestorationNote] = useState('');
+  const catalogueIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (catalogue) {
@@ -55,44 +55,35 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
       setPriceDisplay(catalogue.price_display || '');
       setShowRestorationNotes(catalogue.show_restoration_notes ?? false);
       setRestorationNote(catalogue.public_restoration_note || '');
+      catalogueIdRef.current = catalogue.id;
     } else if (!isLoading) {
-      // Auto-populate price from expenses
       if (estimatedSalePrice) {
         setPriceDisplay(`From $${estimatedSalePrice.toLocaleString()}`);
       }
     }
   }, [catalogue, isLoading, estimatedSalePrice]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    const payload = {
-      piano_id: pianoId,
-      visible,
-      status,
-      public_description: description,
-      highlights: highlights.filter(h => h.trim()),
-      price_display: priceDisplay,
-      show_restoration_notes: showRestorationNotes,
-      public_restoration_note: restorationNote,
-    };
-
+  const autoSave = useCallback(async (updates: Record<string, any>) => {
+    const payload = { piano_id: pianoId, ...updates };
     let error;
-    if (catalogue?.id) {
-      const res = await supabase.from('catalogue').update(payload).eq('id', catalogue.id);
+    if (catalogueIdRef.current) {
+      const res = await supabase.from('catalogue').update(payload).eq('id', catalogueIdRef.current);
       error = res.error;
     } else {
-      const res = await supabase.from('catalogue').insert(payload);
+      const res = await supabase.from('catalogue').insert(payload).select().single();
       error = res.error;
+      if (!error && res.data) catalogueIdRef.current = res.data.id;
     }
-
-    setSaving(false);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       qc.invalidateQueries({ queryKey: ['catalogue', pianoId] });
-      toast({ title: 'Saved', description: 'Catalogue settings updated.' });
     }
-  };
+  }, [pianoId, qc]);
+
+  const handleVisibleChange = (v: boolean) => { setVisible(v); autoSave({ visible: v }); };
+  const handleStatusChange = (v: string) => { setStatus(v); autoSave({ status: v }); };
+  const handleRestorationToggle = (v: boolean) => { setShowRestorationNotes(v); autoSave({ show_restoration_notes: v }); };
 
   const catalogueUrl = `${window.location.origin}/catalogue/${pianoId}`;
 
@@ -115,7 +106,7 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
 
         <div className="flex items-center justify-between mb-4">
           <Label className="text-sm">Show in public catalogue</Label>
-          <Switch checked={visible} onCheckedChange={setVisible} disabled={!canEdit} />
+          <Switch checked={visible} onCheckedChange={handleVisibleChange} disabled={!canEdit} />
         </div>
 
         <div>
@@ -124,7 +115,7 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
             {CATALOGUE_STATUSES.map(s => (
               <button
                 key={s.value}
-                onClick={() => canEdit && setStatus(s.value)}
+                onClick={() => canEdit && handleStatusChange(s.value)}
                 disabled={!canEdit}
                 className={`px-3 py-1.5 rounded-full text-xs font-mono transition-colors ${status === s.value
                   ? 'bg-primary text-primary-foreground'
@@ -146,6 +137,7 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
             <Textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
+              onBlur={() => autoSave({ public_description: description })}
               placeholder="Describe this piano for potential buyers..."
               className="min-h-[100px]"
               disabled={!canEdit}
@@ -165,6 +157,7 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
                       next[i] = e.target.value;
                       setHighlights(next);
                     }}
+                    onBlur={() => autoSave({ highlights: highlights.filter(x => x.trim()) })}
                     placeholder={i === 0 ? 'e.g. American-made, last generation Indiana Baldwin' : ''}
                     disabled={!canEdit}
                     className="h-9"
@@ -179,12 +172,14 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
             <Input
               value={priceDisplay}
               onChange={e => setPriceDisplay(e.target.value)}
+              onBlur={() => autoSave({ price_display: priceDisplay })}
               placeholder='e.g. "From $2,500 · Custom finish"'
               disabled={!canEdit}
               className="h-9"
             />
           </div>
         </div>
+        <p className="text-[10px] text-muted-foreground mt-3">Fields auto-save when you click away</p>
       </div>
 
       {/* Restoration Notes */}
@@ -193,12 +188,13 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
 
         <div className="flex items-center justify-between mb-4">
           <Label className="text-sm">Show restoration progress to guests</Label>
-          <Switch checked={showRestorationNotes} onCheckedChange={setShowRestorationNotes} disabled={!canEdit} />
+          <Switch checked={showRestorationNotes} onCheckedChange={handleRestorationToggle} disabled={!canEdit} />
         </div>
 
         <Textarea
           value={restorationNote}
           onChange={e => setRestorationNote(e.target.value)}
+          onBlur={() => autoSave({ public_restoration_note: restorationNote })}
           placeholder="e.g. Currently in finishing queue. Available within 2–3 weeks."
           className="min-h-[80px]"
           disabled={!canEdit}
@@ -225,14 +221,6 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
           </div>
         </div>
       </div>
-
-      {/* Save */}
-      {canEdit && (
-        <Button onClick={handleSave} disabled={saving} className="w-full h-11 font-mono">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-          Save Catalogue Settings
-        </Button>
-      )}
     </div>
   );
 }
