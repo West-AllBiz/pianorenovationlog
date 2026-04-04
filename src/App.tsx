@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Login from "./pages/Login";
+import Catalogue from "./pages/Catalogue";
+import CatalogueDetail from "./pages/CatalogueDetail";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import PianoDetail from "./pages/PianoDetail";
@@ -36,6 +38,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+    <Route path="/catalogue" element={<Catalogue />} />
+    <Route path="/catalogue/:id" element={<CatalogueDetail />} />
     <Route path="/" element={<Navigate to="/dashboard" replace />} />
     <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
       <Route path="/dashboard" element={<Dashboard />} />
