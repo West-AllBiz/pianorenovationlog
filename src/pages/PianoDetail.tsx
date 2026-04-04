@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Edit, Check, X, Pencil, Plus, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, X, Pencil, Plus, Trash2, Loader2 } from 'lucide-react';
 import { PianoPhotosSection } from '@/components/PianoPhotos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
