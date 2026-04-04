@@ -51,7 +51,7 @@ export function AppLayout() {
           <h1 className="font-heading text-lg font-semibold text-primary">Nick's Piano Services</h1>
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <Outlet />
         </main>
       </div>
