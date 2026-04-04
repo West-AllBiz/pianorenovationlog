@@ -58,6 +58,56 @@ export type Database = {
           },
         ]
       }
+      catalogue: {
+        Row: {
+          created_at: string | null
+          highlights: string[] | null
+          id: string
+          piano_id: string
+          price_display: string | null
+          public_description: string | null
+          public_restoration_note: string | null
+          show_restoration_notes: boolean | null
+          status: string
+          updated_at: string | null
+          visible: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          highlights?: string[] | null
+          id?: string
+          piano_id: string
+          price_display?: string | null
+          public_description?: string | null
+          public_restoration_note?: string | null
+          show_restoration_notes?: boolean | null
+          status?: string
+          updated_at?: string | null
+          visible?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          highlights?: string[] | null
+          id?: string
+          piano_id?: string
+          price_display?: string | null
+          public_description?: string | null
+          public_restoration_note?: string | null
+          show_restoration_notes?: boolean | null
+          status?: string
+          updated_at?: string | null
+          visible?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalogue_piano_id_fkey"
+            columns: ["piano_id"]
+            isOneToOne: true
+            referencedRelation: "pianos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       character_notes: {
         Row: {
           action_feel: string[] | null
