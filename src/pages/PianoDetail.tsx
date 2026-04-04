@@ -226,7 +226,7 @@ export default function PianoDetail() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl min-w-0 overflow-x-hidden p-4 sm:p-6 lg:p-8">
+    <div className="mx-auto max-w-5xl min-w-0 p-4 sm:p-6 lg:p-8 overflow-x-clip">
       {!canEdit && (
         <div className="mb-4 p-3 bg-muted/50 border rounded-lg text-sm text-muted-foreground">
           You have view-only access. Contact an admin to request edit permissions.
