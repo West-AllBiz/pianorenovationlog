@@ -22,7 +22,9 @@ import {
   type ConditionScore, type TaskCategory,
 } from '@/types/piano';
 
-const TABS = ['Overview', 'Intake', 'Restoration', 'Expenses', 'Character Notes', 'Activity'] as const;
+import CatalogueTab from '@/components/CatalogueTab';
+
+const TABS = ['Overview', 'Intake', 'Restoration', 'Expenses', 'Character Notes', 'Catalogue', 'Activity'] as const;
 
 const TASK_STATUS_STYLES: Record<string, string> = {
   done: 'bg-success/15 text-success',

@@ -97,7 +97,21 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
+          <div className="mt-6 flex items-center gap-3">
+            <div className="flex-1 border-t border-border" />
+            <span className="text-xs text-muted-foreground font-mono">or</span>
+            <div className="flex-1 border-t border-border" />
+          </div>
+
+          <div className="mt-4 text-center">
+            <p className="text-sm text-muted-foreground mb-2">🎹 Browse Available Pianos</p>
+            <p className="text-xs text-muted-foreground mb-3">No account needed</p>
+            <Button variant="outline" className="w-full h-11 font-medium border-teal text-teal hover:bg-teal/10" onClick={() => navigate('/catalogue')}>
+              View Catalogue
+            </Button>
+          </div>
+
+          <p className="mt-4 text-center text-xs text-muted-foreground">
             Nick is admin · Others join as contributors
           </p>
         </motion.div>

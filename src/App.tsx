@@ -38,6 +38,8 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+    <Route path="/catalogue" element={<Catalogue />} />
+    <Route path="/catalogue/:id" element={<CatalogueDetail />} />
     <Route path="/" element={<Navigate to="/dashboard" replace />} />
     <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
       <Route path="/dashboard" element={<Dashboard />} />
