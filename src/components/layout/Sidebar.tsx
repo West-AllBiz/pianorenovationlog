@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Piano, Kanban, DollarSign, Calendar,
-  BarChart3, Users, Settings, LogOut, Music, Scale
+  BarChart3, Users, Settings, LogOut, Music, Scale, BookOpen
 } from 'lucide-react';
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/inventory', icon: Piano, label: 'Inventory' },
   { to: '/triage', icon: Scale, label: 'Acquisition Triage' },
   { to: '/renovation', icon: Kanban, label: 'Renovation Progress' },
+  { to: '/catalogue', icon: BookOpen, label: 'Catalogue' },
   { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/reports', icon: BarChart3, label: 'Reports' },
   { to: '/team', icon: Users, label: 'Team' },

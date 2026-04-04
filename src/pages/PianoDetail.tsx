@@ -296,7 +296,7 @@ export default function PianoDetail() {
       </motion.div>
 
       {/* Tabs */}
-      <div className="border-b mb-6 -mx-4 sm:mx-0 overflow-x-auto">
+      <div className="border-b mb-6 -mx-4 sm:mx-0 overflow-x-auto scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
         <div className="flex min-w-max px-4 sm:px-0">
           {TABS.map(t => (
             <button key={t} onClick={() => setActiveTab(t)}
