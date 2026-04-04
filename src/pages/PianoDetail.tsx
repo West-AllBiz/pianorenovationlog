@@ -484,15 +484,20 @@ export default function PianoDetail() {
   );
 }
 
-// ── Editable Textarea ────────────────────────────────────
+// ── Editable Textarea (auto-save on blur) ────────────────
 function EditableTextarea({ value, onSave }: { value: string; onSave: (v: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
+  const handleBlur = () => {
+    if (draft !== value) onSave(draft);
+    setEditing(false);
+  };
+
   if (!editing) {
     return (
       <div className="group min-w-0 cursor-pointer" onClick={() => { setDraft(value); setEditing(true); }}>
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{value}</p>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">{value || 'Click to add notes…'}</p>
         <p className="text-xs text-muted-foreground/50 mt-1 opacity-0 group-hover:opacity-100">Click to edit</p>
       </div>
     );
@@ -500,11 +505,8 @@ function EditableTextarea({ value, onSave }: { value: string; onSave: (v: string
 
   return (
     <div>
-      <Textarea value={draft} onChange={e => setDraft(e.target.value)} rows={6} className="w-full min-w-0 text-sm" autoFocus />
-      <div className="mt-2 flex flex-wrap gap-2">
-        <Button size="sm" onClick={() => { onSave(draft); setEditing(false); }}>Save</Button>
-        <Button size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
-      </div>
+      <Textarea value={draft} onChange={e => setDraft(e.target.value)} rows={6} className="w-full min-w-0 text-sm" autoFocus onBlur={handleBlur} />
+      <p className="text-xs text-muted-foreground mt-1">Auto-saves when you click away</p>
     </div>
   );
 }
