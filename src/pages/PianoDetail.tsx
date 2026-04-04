@@ -36,7 +36,7 @@ const TASK_STATUS_DISPLAY: Record<string, string> = {
   done: 'Complete', in_progress: 'In Progress', todo: 'Pending', blocked: 'Awaiting Parts',
 };
 
-// ── Inline Edit Field ────────────────────────────────────
+// ── Inline Edit Field (auto-save on blur) ────────────────
 function InlineField({ label, value, onSave, type = 'text', options, canEdit: editable = true }: {
   label: string; value: string; onSave: (val: string) => void;
   type?: 'text' | 'select' | 'textarea'; options?: Record<string, string>; canEdit?: boolean;
@@ -71,12 +71,11 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
       <div className="flex flex-col gap-1 border-b py-2 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono">{label}</span>
         <div className="flex w-full min-w-0 items-center gap-1 sm:w-auto sm:max-w-[60%]">
-          <Select value={draft} onValueChange={v => { setDraft(v); }}>
+          <Select value={draft} onValueChange={v => { setDraft(v); onSave(v); setEditing(false); }}>
             <SelectTrigger className="h-8 w-full min-w-0 text-xs sm:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>{Object.entries(options).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
           </Select>
-          <button onClick={save} className="p-1 hover:bg-success/10 rounded flex-shrink-0"><Check className="h-3.5 w-3.5 text-success" /></button>
-          <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded flex-shrink-0"><X className="h-3.5 w-3.5 text-destructive" /></button>
+          <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded flex-shrink-0"><X className="h-3.5 w-3.5 text-muted-foreground" /></button>
         </div>
       </div>
     );
@@ -87,13 +86,11 @@ function InlineField({ label, value, onSave, type = 'text', options, canEdit: ed
       <span className="text-[10px] sm:text-sm uppercase tracking-wider sm:tracking-normal sm:normal-case text-muted-foreground font-mono shrink-0">{label}</span>
       <div className="flex w-full min-w-0 items-start gap-1 sm:w-auto sm:max-w-[60%] sm:items-center">
         {type === 'textarea' ? (
-          <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="min-h-[100px] w-full min-w-0 text-sm" onKeyDown={e => { if (e.key === 'Escape') cancel(); }} />
+          <Textarea value={draft} onChange={e => setDraft(e.target.value)} className="min-h-[100px] w-full min-w-0 text-sm" onBlur={save} onKeyDown={e => { if (e.key === 'Escape') cancel(); }} />
         ) : (
           <Input value={draft} onChange={e => setDraft(e.target.value)} className="h-8 w-full min-w-0 text-sm sm:w-40"
-            onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }} autoFocus />
+            onBlur={save} onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') cancel(); }} autoFocus />
         )}
-        <button onClick={save} className="p-1 hover:bg-success/10 rounded flex-shrink-0"><Check className="h-3.5 w-3.5 text-success" /></button>
-        <button onClick={cancel} className="p-1 hover:bg-destructive/10 rounded flex-shrink-0"><X className="h-3.5 w-3.5 text-destructive" /></button>
       </div>
     </div>
   );
