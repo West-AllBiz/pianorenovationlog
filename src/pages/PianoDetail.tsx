@@ -452,6 +452,10 @@ export default function PianoDetail() {
           <CharacterContent pianoId={piano.id} characterNotes={characterNotes} canEdit={canEdit} />
         )}
 
+        {activeTab === 'Catalogue' && (
+          <CatalogueTab pianoId={piano.id} inventoryId={piano.inventory_id} estimatedSalePrice={expenses?.estimated_sale_price} canEdit={canEdit} />
+        )}
+
         {activeTab === 'Activity' && (
           <Section title="Activity Log">
             {activityLog.length > 0 ? (
