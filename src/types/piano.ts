@@ -39,7 +39,8 @@ export type TaskCategory =
   | 'hammer_shaping' | 'hammer_replacement' | 'damper_regulation' | 'action_rebuild'
   | 'key_leveling' | 'key_bushing_replacement' | 'pedal_repair' | 'string_replacement'
   | 'bridge_repair' | 'soundboard_repair' | 'cabinet_work' | 'cabinet_repair' | 'refinishing'
-  | 'polishing' | 'final_detailing' | 'final_qc' | 'structural' | 'other';
+  | 'polishing' | 'final_detailing' | 'final_qc' | 'structural'
+  | 'player_piano' | 'listing_sales' | 'client_work' | 'acquisition' | 'other';
 
 export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
 
@@ -366,6 +367,10 @@ export const TASK_CATEGORY_LABELS: Record<string, string> = {
   final_detailing: 'Final Detailing',
   final_qc: 'Final QC',
   structural: 'Structural',
+  player_piano: 'Player Piano',
+  listing_sales: 'Listing & Sales',
+  client_work: 'Client Work',
+  acquisition: 'Acquisition',
   other: 'Other',
 };
 
