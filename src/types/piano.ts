@@ -367,6 +367,10 @@ export const TASK_CATEGORY_LABELS: Record<string, string> = {
   final_detailing: 'Final Detailing',
   final_qc: 'Final QC',
   structural: 'Structural',
+  player_piano: 'Player Piano',
+  listing_sales: 'Listing & Sales',
+  client_work: 'Client Work',
+  acquisition: 'Acquisition',
   other: 'Other',
 };
 
