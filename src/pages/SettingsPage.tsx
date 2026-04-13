@@ -43,7 +43,7 @@ function TaskTemplateManager() {
   };
 
   const handleUpdateField = async (id: string, field: string, value: string) => {
-    await supabase.from('task_templates').update({ [field]: value }).eq('id', id);
+    await supabase.from('task_templates').update({ [field]: value } as any).eq('id', id);
     setTemplates(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
     toast({ title: 'Saved' });
   };

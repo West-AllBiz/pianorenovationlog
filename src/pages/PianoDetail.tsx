@@ -205,7 +205,7 @@ export default function PianoDetail() {
 
   const handleConditionUpdate = async (field: string, value: number) => {
     if (!inspection) return;
-    const { error } = await supabase.from('condition_inspections').update({ [field]: value }).eq('id', inspection.id);
+    const { error } = await supabase.from('condition_inspections').update({ [field]: value } as any).eq('id', inspection.id);
     if (error) { toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' }); return; }
     qc.invalidateQueries({ queryKey: ['inspection', piano.id] });
     logActivity(piano.id, `Updated condition ${field}`, field, String(inspection[field as keyof typeof inspection]), String(value));
@@ -215,7 +215,7 @@ export default function PianoDetail() {
   const handleIssueToggle = async (field: string) => {
     if (!inspection) return;
     const newVal = !inspection[field as keyof typeof inspection];
-    const { error } = await supabase.from('condition_inspections').update({ [field]: newVal }).eq('id', inspection.id);
+    const { error } = await supabase.from('condition_inspections').update({ [field]: newVal } as any).eq('id', inspection.id);
     if (error) { toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' }); return; }
     qc.invalidateQueries({ queryKey: ['inspection', piano.id] });
     logActivity(piano.id, `${newVal ? 'Flagged' : 'Cleared'} ${field.replace(/_/g, ' ')}`);
@@ -685,7 +685,7 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
   };
 
   const handleUpdateTask = async (taskId: string, updates: Record<string, any>) => {
-    await supabase.from('restoration_tasks').update(updates).eq('id', taskId);
+    await supabase.from('restoration_tasks').update(updates as any).eq('id', taskId);
     qc.invalidateQueries({ queryKey: ['tasks', pianoId] });
     toast({ title: 'Saved' });
   };
@@ -836,9 +836,9 @@ function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canE
     const value = rawValue === '' ? null : parseFloat(rawValue) || 0;
     
     if (expenses?.id) {
-      await supabase.from('expenses').update({ [field]: value }).eq('id', expenses.id);
+      await supabase.from('expenses').update({ [field]: value } as any).eq('id', expenses.id);
     } else {
-      await supabase.from('expenses').insert({ piano_id: pianoId, [field]: value });
+      await supabase.from('expenses').insert({ piano_id: pianoId, [field]: value } as any);
     }
 
     if (user) {
@@ -977,9 +977,9 @@ function CharacterContent({ pianoId, characterNotes, canEdit: editable }: {
     const updated = current.includes(tag) ? current.filter((t: string) => t !== tag) : [...current, tag];
 
     if (characterNotes?.id) {
-      await supabase.from('character_notes').update({ [field]: updated }).eq('id', characterNotes.id);
+      await supabase.from('character_notes').update({ [field]: updated } as any).eq('id', characterNotes.id);
     } else {
-      await supabase.from('character_notes').insert({ piano_id: pianoId, [field]: updated });
+      await supabase.from('character_notes').insert({ piano_id: pianoId, [field]: updated } as any);
     }
     qc.invalidateQueries({ queryKey: ['character_notes', pianoId] });
     toast({ title: 'Saved' });

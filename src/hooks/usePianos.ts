@@ -195,7 +195,7 @@ export function useUpdatePiano() {
       oldValue?: string;
       newValue?: string;
     }) => {
-      const { error } = await supabase.from('pianos').update(updates).eq('id', id);
+      const { error } = await supabase.from('pianos').update(updates as any).eq('id', id);
       if (error) throw error;
 
       if (fieldName && user) {
