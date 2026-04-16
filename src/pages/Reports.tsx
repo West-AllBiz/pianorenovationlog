@@ -1,54 +1,114 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { samplePianos, sampleExpenses, sampleBusinessCosts, sampleClientJobs, sampleDonations } from '@/data/sampleData';
-import { PIANO_TYPE_LABELS, OWNERSHIP_LABELS } from '@/types/piano';
+import { usePianos } from '@/hooks/usePianos';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { PIANO_TYPE_LABELS } from '@/types/piano';
 
 export default function Reports() {
-  const data = useMemo(() => {
-    // Business inventory profitability
-    const businessPianos = samplePianos.filter(p => p.ownershipCategory === 'business_inventory');
-    const totalInvested = Object.values(sampleBusinessCosts).reduce((s, c) => s + c.totalInvestment, 0);
-    const totalProjectedProfit = Object.values(sampleBusinessCosts).reduce((s, c) => s + (c.projectedProfit || 0), 0);
+  const { data: pianos = [], isLoading: pianosLoading } = usePianos();
 
+  const { data: allExpenses = [] } = useQuery({
+    queryKey: ['all_expenses'],
+    queryFn: async () => {
+      const { data } = await supabase.from('expenses').select('*');
+      return data ?? [];
+    },
+  });
+
+  const { data: allClientRecords = [] } = useQuery({
+    queryKey: ['all_client_records'],
+    queryFn: async () => {
+      const { data } = await supabase.from('client_records').select('*');
+      return data ?? [];
+    },
+  });
+
+  const { data: allDonationRecords = [] } = useQuery({
+    queryKey: ['all_donation_records'],
+    queryFn: async () => {
+      const { data } = await supabase.from('donation_records').select('*');
+      return data ?? [];
+    },
+  });
+
+  const data = useMemo(() => {
+    const businessPianos = pianos.filter(p => p.ownership_category === 'business_inventory');
+
+    // Build profitability from expenses table
     const pianoProfit = businessPianos.map(p => {
-      const cost = sampleBusinessCosts[p.id];
+      const exp = allExpenses.find(e => e.piano_id === p.id);
+      const totalCost = (exp?.purchase_price || 0) + (exp?.parts_cost || 0) + (exp?.labor_cost || 0) + (exp?.moving_cost || 0) + (exp?.marketing_cost || 0);
+      const estSale = exp?.estimated_sale_price || p.asking_price || 0;
       return {
-        name: `${p.brand} ${p.model}`.trim(),
-        id: p.inventoryId,
-        cost: cost?.totalInvestment || 0,
-        estimatedSale: cost?.estimatedSalePrice || 0,
-        profit: cost?.projectedProfit || 0,
+        name: `${p.brand} ${p.model || ''}`.trim(),
+        id: p.inventory_id,
+        cost: totalCost,
+        estimatedSale: estSale,
+        profit: estSale - totalCost,
       };
     }).sort((a, b) => b.profit - a.profit);
 
+    const totalInvested = pianoProfit.reduce((s, p) => s + p.cost, 0);
+    const totalProjectedProfit = pianoProfit.reduce((s, p) => s + p.profit, 0);
+
     // Client work
-    const clientJobs = Object.entries(sampleClientJobs).map(([pianoId, job]) => {
-      const piano = samplePianos.find(p => p.id === pianoId);
-      return { ...job, pianoName: piano ? `${piano.brand} ${piano.model}`.trim() : pianoId };
+    const clientJobs = allClientRecords.map(cr => {
+      const piano = pianos.find(p => p.id === cr.piano_id);
+      return {
+        pianoId: cr.piano_id,
+        pianoName: piano ? `${piano.brand} ${piano.model || ''}`.trim() : cr.piano_id,
+        clientName: cr.client_name,
+        estimate: cr.estimate,
+        depositReceived: cr.deposit_received || 0,
+        balanceDue: cr.balance_due || 0,
+      };
     });
     const clientTotalEstimate = clientJobs.reduce((s, j) => s + (j.estimate || 0), 0);
-    const clientTotalDeposits = clientJobs.reduce((s, j) => s + j.depositReceived, 0);
 
     // Donations
-    const donations = Object.entries(sampleDonations).map(([pianoId, d]) => {
-      const piano = samplePianos.find(p => p.id === pianoId);
-      return { ...d, pianoName: piano ? `${piano.brand} ${piano.model}`.trim() : pianoId };
+    const donations = allDonationRecords.map(d => {
+      const piano = pianos.find(p => p.id === d.piano_id);
+      return {
+        pianoId: d.piano_id,
+        pianoName: piano ? `${piano.brand} ${piano.model || ''}`.trim() : d.piano_id,
+        donationRecipient: d.donation_recipient || '—',
+        donationStatus: d.donation_status || 'pending',
+        donationValue: d.donation_value,
+      };
     });
 
     // Archive
-    const archivePianos = samplePianos.filter(p => p.ownershipCategory === 'restoration_archive');
+    const archivePianos = pianos.filter(p => p.ownership_category === 'restoration_archive');
 
     // By type
     const byType: Record<string, number> = {};
-    samplePianos.forEach(p => { byType[p.pianoType] = (byType[p.pianoType] || 0) + 1; });
+    pianos.forEach(p => { byType[p.piano_type] = (byType[p.piano_type] || 0) + 1; });
 
-    // Expenses by category
+    // Expenses by category (aggregate from expenses table)
     const byCategory: Record<string, number> = {};
-    sampleExpenses.forEach(e => { byCategory[e.category] = (byCategory[e.category] || 0) + e.amount; });
-    const totalExpenses = sampleExpenses.reduce((s, e) => s + e.amount, 0);
+    allExpenses.forEach(e => {
+      if (e.purchase_price) byCategory['Purchase'] = (byCategory['Purchase'] || 0) + Number(e.purchase_price);
+      if (e.parts_cost) byCategory['Parts'] = (byCategory['Parts'] || 0) + Number(e.parts_cost);
+      if (e.labor_cost) byCategory['Labor'] = (byCategory['Labor'] || 0) + Number(e.labor_cost);
+      if (e.moving_cost) byCategory['Moving'] = (byCategory['Moving'] || 0) + Number(e.moving_cost);
+      if (e.marketing_cost) byCategory['Marketing'] = (byCategory['Marketing'] || 0) + Number(e.marketing_cost);
+    });
+    const totalExpenses = Object.values(byCategory).reduce((s, v) => s + v, 0);
 
-    return { totalInvested, totalProjectedProfit, pianoProfit, clientJobs, clientTotalEstimate, clientTotalDeposits, donations, archivePianos, byType: Object.entries(byType), byCategory: Object.entries(byCategory).sort((a, b) => b[1] - a[1]), totalExpenses };
-  }, []);
+    return {
+      totalInvested, totalProjectedProfit, pianoProfit,
+      clientJobs, clientTotalEstimate,
+      donations, archivePianos,
+      byType: Object.entries(byType),
+      byCategory: Object.entries(byCategory).sort((a, b) => b[1] - a[1]),
+      totalExpenses,
+    };
+  }, [pianos, allExpenses, allClientRecords, allDonationRecords]);
+
+  if (pianosLoading) {
+    return <div className="flex items-center justify-center p-12"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
@@ -93,6 +153,7 @@ export default function Reports() {
                 </span>
               </div>
             ))}
+            {data.pianoProfit.length === 0 && <p className="text-sm text-muted-foreground">No business inventory pianos</p>}
           </div>
         </div>
 
@@ -144,7 +205,7 @@ export default function Reports() {
               {data.archivePianos.map((p) => (
                 <div key={p.id} className="py-2 border-b last:border-0">
                   <p className="text-sm font-medium">{p.brand} {p.model}</p>
-                  <p className="text-xs text-muted-foreground">{p.inventoryId} · SN: {p.serialNumber} · {p.privateNotes || '—'}</p>
+                  <p className="text-xs text-muted-foreground">{p.inventory_id} · SN: {p.serial_number || '—'}</p>
                 </div>
               ))}
             </div>
@@ -156,22 +217,26 @@ export default function Reports() {
         {/* Expenses by category */}
         <div className="bg-card rounded-xl border p-5">
           <h3 className="font-heading font-semibold mb-4">Expenses by Category</h3>
-          <div className="space-y-3">
-            {data.byCategory.map(([cat, amount]) => {
-              const pct = data.totalExpenses > 0 ? (amount / data.totalExpenses) * 100 : 0;
-              return (
-                <div key={cat}>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="capitalize">{cat}</span>
-                    <span className="font-medium">${amount.toLocaleString()} ({pct.toFixed(0)}%)</span>
+          {data.byCategory.length > 0 ? (
+            <div className="space-y-3">
+              {data.byCategory.map(([cat, amount]) => {
+                const pct = data.totalExpenses > 0 ? (amount / data.totalExpenses) * 100 : 0;
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <span>{cat}</span>
+                      <span className="font-medium">${amount.toLocaleString()} ({pct.toFixed(0)}%)</span>
+                    </div>
+                    <div className="w-full h-2 bg-muted rounded-full">
+                      <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
-                  <div className="w-full h-2 bg-muted rounded-full">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No expenses recorded yet</p>
+          )}
         </div>
 
         {/* Inventory by type */}

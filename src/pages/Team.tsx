@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { UserPlus, Mail, Shield, LogIn, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { sampleTeam } from '@/data/sampleData';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const roleBadge: Record<string, string> = {
   admin: 'bg-primary/10 text-primary',
@@ -17,6 +18,32 @@ export default function Team() {
   const { user, signIn, signUp, signOut } = useAuth();
   const navigate = useNavigate();
   const [switching, setSwitching] = useState<string | null>(null);
+
+  const { data: teamMembers = [], isLoading } = useQuery({
+    queryKey: ['team_members'],
+    queryFn: async () => {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .order('created_at', { ascending: true });
+
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (!profiles) return [];
+
+      return profiles.map(p => {
+        const roleRow = roles?.find(r => r.user_id === p.id);
+        return {
+          id: p.id,
+          name: p.full_name || 'Unknown',
+          email: p.email || '',
+          role: roleRow?.role || 'viewer',
+        };
+      });
+    },
+  });
 
   const getCredentials = (name: string) => {
     const slug = name.trim().toLowerCase().replace(/\s+/g, '.');
@@ -46,13 +73,17 @@ export default function Team() {
 
   const currentEmail = user?.email;
 
+  if (isLoading) {
+    return <div className="flex items-center justify-center p-12"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="font-heading text-2xl sm:text-3xl font-bold">Team</h1>
-            <p className="text-muted-foreground text-sm">{sampleTeam.length} members</p>
+            <p className="text-muted-foreground text-sm">{teamMembers.length} members</p>
           </div>
           <Button size="sm">
             <UserPlus className="h-4 w-4 mr-1.5" /> Invite
@@ -61,9 +92,8 @@ export default function Team() {
       </motion.div>
 
       <div className="space-y-3">
-        {sampleTeam.map((member, i) => {
-          const memberEmail = `${member.name.trim().toLowerCase().replace(/\s+/g, '.')}@piano.local`;
-          const isCurrentUser = currentEmail === memberEmail;
+        {teamMembers.map((member, i) => {
+          const isCurrentUser = currentEmail === member.email;
 
           return (
             <motion.div
@@ -90,9 +120,6 @@ export default function Team() {
                   <span className={`status-badge ${roleBadge[member.role]} capitalize`}>
                     <Shield className="h-3 w-3 mr-1" /> {member.role}
                   </span>
-                  {member.assignedPianos > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1">{member.assignedPianos} pianos assigned</p>
-                  )}
                 </div>
                 {!isCurrentUser && (
                   <Button
