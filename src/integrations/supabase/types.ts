@@ -722,6 +722,7 @@ export type Database = {
           created_at: string | null
           default_status: string | null
           id: string
+          instrument_type: string | null
           sort_order: number | null
           task_name: string
           updated_at: string | null
@@ -732,6 +733,7 @@ export type Database = {
           created_at?: string | null
           default_status?: string | null
           id?: string
+          instrument_type?: string | null
           sort_order?: number | null
           task_name: string
           updated_at?: string | null
@@ -742,6 +744,7 @@ export type Database = {
           created_at?: string | null
           default_status?: string | null
           id?: string
+          instrument_type?: string | null
           sort_order?: number | null
           task_name?: string
           updated_at?: string | null
