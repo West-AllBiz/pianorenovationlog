@@ -1,4 +1,4 @@
-export type PianoType = 'upright' | 'grand' | 'baby_grand' | 'console' | 'spinet' | 'digital' | 'player_piano';
+export type PianoType = 'upright' | 'grand' | 'baby_grand' | 'console' | 'spinet' | 'digital' | 'player_piano' | 'digital_keyboard' | 'harp';
 
 export type OwnershipCategory = 'business_inventory' | 'client_piano' | 'donation_project' | 'restoration_archive';
 
@@ -308,6 +308,8 @@ export const PIANO_TYPE_LABELS: Record<PianoType, string> = {
   spinet: 'Spinet',
   digital: 'Digital',
   player_piano: 'Player Piano',
+  digital_keyboard: 'Digital Keyboard',
+  harp: 'Harp',
 };
 
 export const COLOR_TAG_HEX: Record<ColorTag, string> = {
