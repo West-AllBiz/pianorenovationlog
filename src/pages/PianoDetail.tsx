@@ -23,6 +23,9 @@ import {
 } from '@/types/piano';
 
 import CatalogueTab from '@/components/CatalogueTab';
+import { LaborSummary } from '@/components/LaborSummary';
+import { RestorationCostCard } from '@/components/RestorationCostCard';
+import { HourlyRateButton } from '@/components/HourlyRateDialog';
 
 const TABS = ['Overview', 'Intake', 'Restoration', 'Expenses', 'Character Notes', 'Catalogue', 'Activity'] as const;
 
@@ -582,7 +585,14 @@ function TaskRow({ task: t, editable, onUpdate, onDelete }: {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
         <div>Assigned: <span className="text-foreground">{t.assignee || '—'}</span></div>
-        <div>Hours: <span className="text-foreground font-mono">{t.labor_hours}h</span></div>
+        <div className="flex items-center gap-1">
+          <span>Hours:</span>
+          <InlineHours
+            value={Number(t.labor_hours) || 0}
+            editable={editable}
+            onSave={v => onUpdate(t.id, { labor_hours: v })}
+          />
+        </div>
         <div>Parts: <span className="text-foreground">{t.parts_used || 'None'}</span></div>
         {t.completion_date && <div>Completed: <span className="text-foreground">{t.completion_date}</span></div>}
       </div>
