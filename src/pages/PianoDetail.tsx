@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Edit, X, Pencil, Plus, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Edit, X, Pencil, Plus, Trash2, Loader2, MinusCircle } from 'lucide-react';
 import { PianoPhotosSection } from '@/components/PianoPhotos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,9 +34,10 @@ const TASK_STATUS_STYLES: Record<string, string> = {
   in_progress: 'bg-warning/15 text-warning',
   todo: 'bg-muted text-muted-foreground',
   blocked: 'bg-destructive/15 text-destructive',
+  'n/a': 'bg-muted-foreground/20 text-muted-foreground',
 };
 const TASK_STATUS_DISPLAY: Record<string, string> = {
-  done: 'Complete', in_progress: 'In Progress', todo: 'Pending', blocked: 'Awaiting Parts',
+  done: 'Complete', in_progress: 'In Progress', todo: 'Pending', blocked: 'Awaiting Parts', 'n/a': 'N/A',
 };
 
 // ── Inline Edit Field (auto-save on blur) ────────────────
@@ -711,8 +712,10 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
   const qc = useQueryClient();
   const { user, profile } = useAuth();
 
-  const doneCount = tasks.filter(t => t.status === 'done').length;
-  const totalCount = tasks.length;
+  const applicableTasks = tasks.filter(t => t.status !== 'n/a');
+  const doneCount = applicableTasks.filter(t => t.status === 'done').length;
+  const totalCount = applicableTasks.length;
+  const naCount = tasks.length - applicableTasks.length;
   const pctComplete = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
   // Group tasks by category
@@ -828,6 +831,7 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
                       <SelectItem value="in_progress">In Progress</SelectItem>
                       <SelectItem value="blocked">Awaiting Parts</SelectItem>
                       <SelectItem value="done">Complete</SelectItem>
+                      <SelectItem value="n/a">N/A</SelectItem>
                     </SelectContent>
                   </Select>
                   <Input type="number" placeholder="Hours" value={newTask.labor_hours} onChange={e => setNewTask(t => ({ ...t, labor_hours: e.target.value }))} />
