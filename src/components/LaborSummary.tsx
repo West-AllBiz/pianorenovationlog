@@ -15,12 +15,13 @@ export function LaborSummary({ tasks }: { tasks: Task[] }) {
   const { data: rate = 100 } = useHourlyRate();
 
   const { totalHours, doneCount, totalCount, laborCost } = useMemo(() => {
-    const done = tasks.filter(t => t.status === 'done');
+    const applicable = tasks.filter(t => t.status !== 'n/a');
+    const done = applicable.filter(t => t.status === 'done');
     const hours = done.reduce((s, t) => s + (Number(t.labor_hours) || 0), 0);
     return {
       totalHours: hours,
       doneCount: done.length,
-      totalCount: tasks.length,
+      totalCount: applicable.length,
       laborCost: hours * rate,
     };
   }, [tasks, rate]);

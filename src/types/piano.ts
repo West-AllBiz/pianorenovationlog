@@ -42,7 +42,7 @@ export type TaskCategory =
   | 'polishing' | 'final_detailing' | 'final_qc' | 'structural'
   | 'player_piano' | 'listing_sales' | 'client_work' | 'acquisition' | 'other';
 
-export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done';
+export type TaskStatus = 'todo' | 'in_progress' | 'blocked' | 'done' | 'n/a';
 
 export type ColorTag = 'pink' | 'magenta' | 'yellow' | 'light_green' | 'orange' | 'dark_blue' | 'light_blue' | 'purple' | 'lavender' | 'green';
 
