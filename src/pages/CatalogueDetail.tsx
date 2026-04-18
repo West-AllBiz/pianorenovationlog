@@ -206,6 +206,17 @@ export default function CatalogueDetail() {
             </div>
           )}
 
+          {/* Restoration Record (public-facing) */}
+          <RestorationRecord
+            tasks={listing.tasks || []}
+            expenses={listing.expenses}
+            hourlyRate={listing.hourlyRate || 100}
+            showLaborHours={!!(listing as any).show_labor_hours}
+            showTaskList={!!(listing as any).show_task_list}
+            showCostBreakdown={!!(listing as any).show_cost_breakdown}
+            isSold={listing.status === 'sold'}
+          />
+
           {/* Actions */}
           <div className="mt-8 space-y-3">
             <a href="tel:+14075551234" className="w-full">
