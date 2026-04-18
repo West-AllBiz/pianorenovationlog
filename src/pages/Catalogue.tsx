@@ -40,18 +40,26 @@ export default function Catalogue() {
       const pianoIds = data.map((c: any) => c.piano_id);
       if (pianoIds.length === 0) return [];
 
-      const [pianos, photos, charNotes] = await Promise.all([
+      const [pianos, photos, charNotes, tasks] = await Promise.all([
         supabase.from('pianos').select('id, brand, model, piano_type, year_built, country_of_origin, finish_plan, selling_channel, inventory_id').in('id', pianoIds),
         supabase.from('piano_photos').select('piano_id, url, is_primary, sort_order, category').in('piano_id', pianoIds),
         supabase.from('character_notes').select('piano_id, tonal_character, action_feel, musical_suitability, cabinet_character').in('piano_id', pianoIds),
+        supabase.from('restoration_tasks').select('piano_id, status, labor_hours').in('piano_id', pianoIds),
       ]);
 
-      return data.map((c: any) => ({
-        ...c,
-        piano: pianos.data?.find((p: any) => p.id === c.piano_id),
-        photos: (photos.data || []).filter((p: any) => p.piano_id === c.piano_id),
-        character: charNotes.data?.find((n: any) => n.piano_id === c.piano_id),
-      }));
+      return data.map((c: any) => {
+        const pianoTasks = (tasks.data || []).filter((t: any) => t.piano_id === c.piano_id);
+        const totalHours = pianoTasks
+          .filter((t: any) => t.status === 'done' || t.status === 'in_progress')
+          .reduce((s: number, t: any) => s + (Number(t.labor_hours) || 0), 0);
+        return {
+          ...c,
+          piano: pianos.data?.find((p: any) => p.id === c.piano_id),
+          photos: (photos.data || []).filter((p: any) => p.piano_id === c.piano_id),
+          character: charNotes.data?.find((n: any) => n.piano_id === c.piano_id),
+          totalHours,
+        };
+      });
     },
   });
 
@@ -186,6 +194,15 @@ export default function Catalogue() {
                             <span key={t} className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-success/10 text-success">{t.replace(/_/g, ' ')}</span>
                           ))}
                         </div>
+                      )}
+
+                      {/* Labor hours line */}
+                      {listing.show_labor_hours && listing.totalHours > 0 && (
+                        <p className="text-xs font-mono text-foreground mb-2">
+                          <span className="text-primary">✦</span>{' '}
+                          {Number.isInteger(listing.totalHours) ? listing.totalHours : listing.totalHours.toFixed(1).replace(/\.0$/, '')} hours of master restoration
+                          {listing.status === 'sold' ? ' invested' : ''}
+                        </p>
                       )}
 
                       {/* Price */}

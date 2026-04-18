@@ -43,6 +43,9 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
   const [priceDisplay, setPriceDisplay] = useState('');
   const [showRestorationNotes, setShowRestorationNotes] = useState(false);
   const [restorationNote, setRestorationNote] = useState('');
+  const [showLaborHours, setShowLaborHours] = useState(true);
+  const [showTaskList, setShowTaskList] = useState(false);
+  const [showCostBreakdown, setShowCostBreakdown] = useState(false);
   const catalogueIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -55,6 +58,9 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
       setPriceDisplay(catalogue.price_display || '');
       setShowRestorationNotes(catalogue.show_restoration_notes ?? false);
       setRestorationNote(catalogue.public_restoration_note || '');
+      setShowLaborHours((catalogue as any).show_labor_hours ?? true);
+      setShowTaskList((catalogue as any).show_task_list ?? false);
+      setShowCostBreakdown((catalogue as any).show_cost_breakdown ?? false);
       catalogueIdRef.current = catalogue.id;
     } else if (!isLoading) {
       if (estimatedSalePrice) {
@@ -84,6 +90,9 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
   const handleVisibleChange = (v: boolean) => { setVisible(v); autoSave({ visible: v }); };
   const handleStatusChange = (v: string) => { setStatus(v); autoSave({ status: v }); };
   const handleRestorationToggle = (v: boolean) => { setShowRestorationNotes(v); autoSave({ show_restoration_notes: v }); };
+  const handleLaborHoursToggle = (v: boolean) => { setShowLaborHours(v); autoSave({ show_labor_hours: v }); };
+  const handleTaskListToggle = (v: boolean) => { setShowTaskList(v); autoSave({ show_task_list: v }); };
+  const handleCostBreakdownToggle = (v: boolean) => { setShowCostBreakdown(v); autoSave({ show_cost_breakdown: v }); };
 
   const catalogueUrl = `${window.location.origin}/catalogue/${pianoId}`;
 
@@ -199,6 +208,58 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
           className="min-h-[80px]"
           disabled={!canEdit}
         />
+      </div>
+
+      {/* Labor & Process Visibility */}
+      <div className="p-4 bg-card rounded-xl border">
+        <h3 className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground mb-4">
+          Labor & Process Visibility
+        </h3>
+
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <Label className="text-sm">Show total labor hours</Label>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              "{`{X}`} hours of master restoration" shown on card
+            </p>
+          </div>
+          <Switch checked={showLaborHours} onCheckedChange={handleLaborHoursToggle} disabled={!canEdit} />
+        </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label className="text-sm">Show task list breakdown</Label>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Lists completed tasks grouped by category on the public detail page
+            </p>
+          </div>
+          <Switch checked={showTaskList} onCheckedChange={handleTaskListToggle} disabled={!canEdit} />
+        </div>
+
+        {/* Diamond / Art Piece override */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-primary/20" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary/70">
+            Diamond / Art Piece Override
+          </span>
+          <div className="flex-1 h-px bg-primary/20" />
+        </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label className="text-sm">Show full cost breakdown (labor $ + parts)</Label>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+              ⚠ Recommended only for Diamond lane pieces where restoration investment is part of the
+              selling story. Reveals your labor cost to the public. Purchase price is never shown.
+            </p>
+          </div>
+          <Switch
+            checked={showCostBreakdown}
+            onCheckedChange={handleCostBreakdownToggle}
+            disabled={!canEdit}
+            className="data-[state=checked]:bg-teal"
+          />
+        </div>
       </div>
 
       {/* Preview + Link */}
