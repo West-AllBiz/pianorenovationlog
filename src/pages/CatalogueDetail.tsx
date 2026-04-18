@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import RestorationRecord from '@/components/public/RestorationRecord';
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   available: { label: 'AVAILABLE', color: 'bg-[#4ade80]/15 text-[#4ade80]' },
