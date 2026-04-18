@@ -90,6 +90,9 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
   const handleVisibleChange = (v: boolean) => { setVisible(v); autoSave({ visible: v }); };
   const handleStatusChange = (v: string) => { setStatus(v); autoSave({ status: v }); };
   const handleRestorationToggle = (v: boolean) => { setShowRestorationNotes(v); autoSave({ show_restoration_notes: v }); };
+  const handleLaborHoursToggle = (v: boolean) => { setShowLaborHours(v); autoSave({ show_labor_hours: v }); };
+  const handleTaskListToggle = (v: boolean) => { setShowTaskList(v); autoSave({ show_task_list: v }); };
+  const handleCostBreakdownToggle = (v: boolean) => { setShowCostBreakdown(v); autoSave({ show_cost_breakdown: v }); };
 
   const catalogueUrl = `${window.location.origin}/catalogue/${pianoId}`;
 
