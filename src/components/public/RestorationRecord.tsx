@@ -95,12 +95,7 @@ export default function RestorationRecord({
 
   const parts = Number(expenses?.parts_cost) || 0;
   const other = (Number(expenses?.moving_cost) || 0) + (Number(expenses?.marketing_cost) || 0);
-
-  // Labor cost is computed from total labor cost stored elsewhere — we don't have hourly rate here for privacy.
-  // Per spec: Level 3 needs labor $. We compute it here from a private call — but to honor the
-  // "never expose hourly rate" rule, we read the labor_cost field from expenses if present.
-  // Fallback: server-injected labor_cost via expenses table.
-  const laborCost = Number((expenses as any)?.labor_cost) || 0;
+  const laborCost = totalHours * (hourlyRate || 0);
   const subtotal = laborCost + parts + other;
 
   return (
