@@ -23,6 +23,9 @@ import {
 } from '@/types/piano';
 
 import CatalogueTab from '@/components/CatalogueTab';
+import { LaborSummary } from '@/components/LaborSummary';
+import { RestorationCostCard } from '@/components/RestorationCostCard';
+import { HourlyRateButton } from '@/components/HourlyRateDialog';
 
 const TABS = ['Overview', 'Intake', 'Restoration', 'Expenses', 'Character Notes', 'Catalogue', 'Activity'] as const;
 
@@ -306,7 +309,11 @@ export default function PianoDetail() {
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
         {activeTab === 'Overview' && (
           <div className="space-y-0">
+            <div className="flex justify-end mb-2">
+              <HourlyRateButton canEdit={canEdit} />
+            </div>
             <PianoPhotosSection pianoId={piano.id} />
+            <RestorationCostCard tasks={tasks as any} expenses={expenses as any} />
             <Section title="Piano Details">
               <div className="grid sm:grid-cols-2 gap-x-6">
                 <InlineField label="Brand" value={piano.brand} onSave={v => handleFieldUpdate('brand', v, piano.brand)} canEdit={canEdit} />
@@ -543,6 +550,56 @@ const SANDING_GRITS: Record<string, string[]> = {
   'Fine Sanding (2000-5000 grit)': ['2000', '3000', '4000', '5000'],
 };
 
+// ── Inline editable labor_hours cell ─────────────────────
+function InlineHours({ value, editable, onSave }: {
+  value: number; editable: boolean; onSave: (v: number) => void | Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value || ''));
+
+  const display = value > 0 ? `${Number.isInteger(value) ? value : value.toFixed(2).replace(/\.?0+$/, '')}h` : '—';
+
+  const commit = () => {
+    const num = parseFloat(draft);
+    const safe = Number.isFinite(num) && num >= 0 ? Math.min(num, 40) : 0;
+    if (safe !== value) void onSave(safe);
+    setEditing(false);
+  };
+
+  if (!editable) return <span className="text-foreground font-mono">{display}</span>;
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => { setDraft(value > 0 ? String(value) : ''); setEditing(true); }}
+        className="font-mono text-foreground hover:text-primary transition-colors"
+      >
+        {display}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      step={0.25}
+      min={0}
+      max={40}
+      autoFocus
+      value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') { setDraft(String(value || '')); setEditing(false); }
+      }}
+      className="h-6 w-14 rounded border border-input bg-background px-1.5 font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+    />
+  );
+}
+
 // ── Task Row Component ───────────────────────────────────
 function TaskRow({ task: t, editable, onUpdate, onDelete }: {
   task: any; editable: boolean;
@@ -582,7 +639,14 @@ function TaskRow({ task: t, editable, onUpdate, onDelete }: {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-muted-foreground">
         <div>Assigned: <span className="text-foreground">{t.assignee || '—'}</span></div>
-        <div>Hours: <span className="text-foreground font-mono">{t.labor_hours}h</span></div>
+        <div className="flex items-center gap-1">
+          <span>Hours:</span>
+          <InlineHours
+            value={Number(t.labor_hours) || 0}
+            editable={editable}
+            onSave={v => onUpdate(t.id, { labor_hours: v })}
+          />
+        </div>
         <div>Parts: <span className="text-foreground">{t.parts_used || 'None'}</span></div>
         {t.completion_date && <div>Completed: <span className="text-foreground">{t.completion_date}</span></div>}
       </div>
@@ -720,6 +784,9 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
 
   return (
     <div className="space-y-0">
+      {/* Labor tracked summary */}
+      {totalCount > 0 && <LaborSummary tasks={tasks} />}
+
       {/* Progress bar */}
       {totalCount > 0 && (
         <div className="mb-6 p-4 bg-card rounded-lg border">
