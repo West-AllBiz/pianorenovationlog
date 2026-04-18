@@ -800,6 +800,11 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
           <div className="w-full h-2.5 bg-muted rounded-full">
             <div className="h-full bg-success rounded-full transition-all" style={{ width: `${pctComplete}%` }} />
           </div>
+          {naCount > 0 && (
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground/70">
+              {naCount} task{naCount === 1 ? '' : 's'} marked not applicable to this piano
+            </p>
+          )}
         </div>
       )}
 
