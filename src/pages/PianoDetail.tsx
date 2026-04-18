@@ -309,7 +309,11 @@ export default function PianoDetail() {
       <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
         {activeTab === 'Overview' && (
           <div className="space-y-0">
+            <div className="flex justify-end mb-2">
+              <HourlyRateButton canEdit={canEdit} />
+            </div>
             <PianoPhotosSection pianoId={piano.id} />
+            <RestorationCostCard tasks={tasks as any} expenses={expenses as any} />
             <Section title="Piano Details">
               <div className="grid sm:grid-cols-2 gap-x-6">
                 <InlineField label="Brand" value={piano.brand} onSave={v => handleFieldUpdate('brand', v, piano.brand)} canEdit={canEdit} />
@@ -780,6 +784,9 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
 
   return (
     <div className="space-y-0">
+      {/* Labor tracked summary */}
+      {totalCount > 0 && <LaborSummary tasks={tasks} />}
+
       {/* Progress bar */}
       {totalCount > 0 && (
         <div className="mb-6 p-4 bg-card rounded-lg border">
