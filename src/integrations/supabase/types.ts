@@ -58,6 +58,24 @@ export type Database = {
           },
         ]
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       catalogue: {
         Row: {
           created_at: string | null
@@ -714,6 +732,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      task_labor_estimates: {
+        Row: {
+          labor_hours: number
+          task_title: string
+          updated_at: string | null
+        }
+        Insert: {
+          labor_hours: number
+          task_title: string
+          updated_at?: string | null
+        }
+        Update: {
+          labor_hours?: number
+          task_title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       task_templates: {
         Row: {
