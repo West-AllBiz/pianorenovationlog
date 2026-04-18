@@ -62,7 +62,7 @@ function fmt$(n: number) {
 }
 
 export default function RestorationRecord({
-  tasks, expenses, showLaborHours, showTaskList, showCostBreakdown, isSold,
+  tasks, expenses, hourlyRate, showLaborHours, showTaskList, showCostBreakdown, isSold,
 }: Props) {
   const [expanded, setExpanded] = useState(false);
 
