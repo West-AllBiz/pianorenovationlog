@@ -43,6 +43,9 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
   const [priceDisplay, setPriceDisplay] = useState('');
   const [showRestorationNotes, setShowRestorationNotes] = useState(false);
   const [restorationNote, setRestorationNote] = useState('');
+  const [showLaborHours, setShowLaborHours] = useState(true);
+  const [showTaskList, setShowTaskList] = useState(false);
+  const [showCostBreakdown, setShowCostBreakdown] = useState(false);
   const catalogueIdRef = useRef<string | null>(null);
 
   useEffect(() => {
