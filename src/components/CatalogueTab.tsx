@@ -210,6 +210,58 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
         />
       </div>
 
+      {/* Labor & Process Visibility */}
+      <div className="p-4 bg-card rounded-xl border">
+        <h3 className="font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground mb-4">
+          Labor & Process Visibility
+        </h3>
+
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <Label className="text-sm">Show total labor hours</Label>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              "{`{X}`} hours of master restoration" shown on card
+            </p>
+          </div>
+          <Switch checked={showLaborHours} onCheckedChange={handleLaborHoursToggle} disabled={!canEdit} />
+        </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label className="text-sm">Show task list breakdown</Label>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Lists completed tasks grouped by category on the public detail page
+            </p>
+          </div>
+          <Switch checked={showTaskList} onCheckedChange={handleTaskListToggle} disabled={!canEdit} />
+        </div>
+
+        {/* Diamond / Art Piece override */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-primary/20" />
+          <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-primary/70">
+            Diamond / Art Piece Override
+          </span>
+          <div className="flex-1 h-px bg-primary/20" />
+        </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <Label className="text-sm">Show full cost breakdown (labor $ + parts)</Label>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
+              ⚠ Recommended only for Diamond lane pieces where restoration investment is part of the
+              selling story. Reveals your labor cost to the public. Purchase price is never shown.
+            </p>
+          </div>
+          <Switch
+            checked={showCostBreakdown}
+            onCheckedChange={handleCostBreakdownToggle}
+            disabled={!canEdit}
+            className="data-[state=checked]:bg-teal"
+          />
+        </div>
+      </div>
+
       {/* Preview + Link */}
       <div className="p-4 bg-card rounded-xl border">
         <h3 className="font-heading font-semibold text-sm uppercase tracking-wider text-muted-foreground mb-4">Preview</h3>
