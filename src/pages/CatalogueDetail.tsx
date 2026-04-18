@@ -34,17 +34,26 @@ export default function CatalogueDetail() {
       if (error) throw error;
       if (!cat) return null;
 
-      const [pianoRes, photosRes, charRes] = await Promise.all([
+      const [pianoRes, photosRes, charRes, tasksRes, expensesRes, rateRes] = await Promise.all([
         supabase.from('pianos').select('*').eq('id', id!).single(),
         supabase.from('piano_photos').select('*').eq('piano_id', id!).order('sort_order'),
         supabase.from('character_notes').select('*').eq('piano_id', id!).maybeSingle(),
+        supabase.from('restoration_tasks').select('id, title, category, status, labor_hours').eq('piano_id', id!),
+        supabase.from('expenses').select('parts_cost, moving_cost, marketing_cost').eq('piano_id', id!).maybeSingle(),
+        supabase.from('app_settings').select('value').eq('key', 'technician_hourly_rate').maybeSingle(),
       ]);
+
+      const rateRaw = rateRes.data?.value;
+      const hourlyRate = typeof rateRaw === 'number' ? rateRaw : Number(rateRaw) || 100;
 
       return {
         ...cat,
         piano: pianoRes.data,
         photos: photosRes.data || [],
         character: charRes.data,
+        tasks: tasksRes.data || [],
+        expenses: expensesRes.data,
+        hourlyRate,
       };
     },
   });
