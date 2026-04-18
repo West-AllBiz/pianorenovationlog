@@ -18,6 +18,7 @@ type Expenses = {
 interface Props {
   tasks: Task[];
   expenses: Expenses;
+  hourlyRate: number;
   showLaborHours: boolean;
   showTaskList: boolean;
   showCostBreakdown: boolean;
