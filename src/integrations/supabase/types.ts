@@ -85,7 +85,10 @@ export type Database = {
           price_display: string | null
           public_description: string | null
           public_restoration_note: string | null
+          show_cost_breakdown: boolean
+          show_labor_hours: boolean
           show_restoration_notes: boolean | null
+          show_task_list: boolean
           status: string
           updated_at: string | null
           visible: boolean | null
@@ -98,7 +101,10 @@ export type Database = {
           price_display?: string | null
           public_description?: string | null
           public_restoration_note?: string | null
+          show_cost_breakdown?: boolean
+          show_labor_hours?: boolean
           show_restoration_notes?: boolean | null
+          show_task_list?: boolean
           status?: string
           updated_at?: string | null
           visible?: boolean | null
@@ -111,7 +117,10 @@ export type Database = {
           price_display?: string | null
           public_description?: string | null
           public_restoration_note?: string | null
+          show_cost_breakdown?: boolean
+          show_labor_hours?: boolean
           show_restoration_notes?: boolean | null
+          show_task_list?: boolean
           status?: string
           updated_at?: string | null
           visible?: boolean | null
