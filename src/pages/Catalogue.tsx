@@ -196,6 +196,15 @@ export default function Catalogue() {
                         </div>
                       )}
 
+                      {/* Labor hours line */}
+                      {listing.show_labor_hours && listing.totalHours > 0 && (
+                        <p className="text-xs font-mono text-foreground mb-2">
+                          <span className="text-primary">✦</span>{' '}
+                          {Number.isInteger(listing.totalHours) ? listing.totalHours : listing.totalHours.toFixed(1).replace(/\.0$/, '')} hours of master restoration
+                          {listing.status === 'sold' ? ' invested' : ''}
+                        </p>
+                      )}
+
                       {/* Price */}
                       {listing.price_display && (
                         <p className="text-sm font-medium text-primary">{listing.price_display}</p>
