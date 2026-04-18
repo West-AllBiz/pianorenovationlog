@@ -546,6 +546,56 @@ const SANDING_GRITS: Record<string, string[]> = {
   'Fine Sanding (2000-5000 grit)': ['2000', '3000', '4000', '5000'],
 };
 
+// ── Inline editable labor_hours cell ─────────────────────
+function InlineHours({ value, editable, onSave }: {
+  value: number; editable: boolean; onSave: (v: number) => void | Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value || ''));
+
+  const display = value > 0 ? `${Number.isInteger(value) ? value : value.toFixed(2).replace(/\.?0+$/, '')}h` : '—';
+
+  const commit = () => {
+    const num = parseFloat(draft);
+    const safe = Number.isFinite(num) && num >= 0 ? Math.min(num, 40) : 0;
+    if (safe !== value) void onSave(safe);
+    setEditing(false);
+  };
+
+  if (!editable) return <span className="text-foreground font-mono">{display}</span>;
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => { setDraft(value > 0 ? String(value) : ''); setEditing(true); }}
+        className="font-mono text-foreground hover:text-primary transition-colors"
+      >
+        {display}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      type="number"
+      inputMode="decimal"
+      step={0.25}
+      min={0}
+      max={40}
+      autoFocus
+      value={draft}
+      onChange={e => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={e => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') { setDraft(String(value || '')); setEditing(false); }
+      }}
+      className="h-6 w-14 rounded border border-input bg-background px-1.5 font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+    />
+  );
+}
+
 // ── Task Row Component ───────────────────────────────────
 function TaskRow({ task: t, editable, onUpdate, onDelete }: {
   task: any; editable: boolean;
