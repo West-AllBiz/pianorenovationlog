@@ -58,6 +58,9 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
       setPriceDisplay(catalogue.price_display || '');
       setShowRestorationNotes(catalogue.show_restoration_notes ?? false);
       setRestorationNote(catalogue.public_restoration_note || '');
+      setShowLaborHours((catalogue as any).show_labor_hours ?? true);
+      setShowTaskList((catalogue as any).show_task_list ?? false);
+      setShowCostBreakdown((catalogue as any).show_cost_breakdown ?? false);
       catalogueIdRef.current = catalogue.id;
     } else if (!isLoading) {
       if (estimatedSalePrice) {
