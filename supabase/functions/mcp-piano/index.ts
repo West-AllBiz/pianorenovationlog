@@ -128,6 +128,32 @@ async function updateTask(params: Record<string, unknown>) {
   return { success: true, task_id, updated: Object.keys(updateFields).filter(k => k !== "updated_at") };
 }
 
+async function listFeedback(params: Record<string, unknown> = {}) {
+  const limit = Math.min(Number(params.limit ?? 50), 200);
+  const queryParts: string[] = [
+    "select=*",
+    "order=created_at.desc",
+    `limit=${limit}`,
+  ];
+
+  if (params.min_rating !== undefined) {
+    queryParts.push(`rating=gte.${Number(params.min_rating)}`);
+  }
+  if (params.max_rating !== undefined) {
+    queryParts.push(`rating=lte.${Number(params.max_rating)}`);
+  }
+  if (params.has_comment === true) {
+    queryParts.push("comment=not.is.null");
+    queryParts.push("comment=neq.");
+  }
+  if (params.since_days !== undefined) {
+    const sinceIso = new Date(Date.now() - Number(params.since_days) * 86400000).toISOString();
+    queryParts.push(`created_at=gte.${encodeURIComponent(sinceIso)}`);
+  }
+
+  return await dbGet("rk_feedback", queryParts.join("&"));
+}
+
 async function addNote(params: { inventory_id: string; note: string }) {
   const piano = await findPianoByInventoryId(params.inventory_id);
   const now = new Date().toISOString();
@@ -149,6 +175,7 @@ const TOOLS = [
   { name: "get_tasks", description: "Get all restoration tasks for a piano grouped by category", inputSchema: { type: "object", properties: { inventory_id: { type: "string" } }, required: ["inventory_id"] } },
   { name: "update_task", description: "Update a restoration task status and log the change", inputSchema: { type: "object", properties: { task_id: { type: "string", description: "UUID of the task" }, status: { type: "string", description: "todo, in_progress, or done" }, notes: { type: "string" }, labor_hours: { type: "number" }, completion_date: { type: "string", description: "ISO date string" } }, required: ["task_id"] } },
   { name: "add_note", description: "Append a dated session note to a piano without changing any fields", inputSchema: { type: "object", properties: { inventory_id: { type: "string" }, note: { type: "string" } }, required: ["inventory_id", "note"] } },
+  { name: "list_feedback", description: "List Rosetta Key user feedback submissions from the rk_feedback table. Returns rating, comment, and timestamp sorted newest first.", inputSchema: { type: "object", properties: { limit: { type: "number", description: "Max rows to return (default 50, max 200)" }, min_rating: { type: "number", description: "Only return rows with rating >= this value (1-5)" }, max_rating: { type: "number", description: "Only return rows with rating <= this value (1-5)" }, has_comment: { type: "boolean", description: "If true, only return rows where comment is not null or empty" }, since_days: { type: "number", description: "Only return rows from the last N days" } } } },
 ];
 
 // --- Main handler ---
@@ -184,6 +211,7 @@ Deno.serve(async (req) => {
         case "get_tasks": toolResult = await getTasks(toolParams); break;
         case "update_task": toolResult = await updateTask(toolParams); break;
         case "add_note": toolResult = await addNote(toolParams); break;
+        case "list_feedback": toolResult = await listFeedback(toolParams); break;
         default: throw new Error(`Unknown tool: ${toolName}`);
       }
 
