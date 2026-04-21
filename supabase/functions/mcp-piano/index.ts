@@ -211,6 +211,7 @@ Deno.serve(async (req) => {
         case "get_tasks": toolResult = await getTasks(toolParams); break;
         case "update_task": toolResult = await updateTask(toolParams); break;
         case "add_note": toolResult = await addNote(toolParams); break;
+        case "list_feedback": toolResult = await listFeedback(toolParams); break;
         default: throw new Error(`Unknown tool: ${toolName}`);
       }
 
