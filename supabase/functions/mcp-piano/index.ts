@@ -128,6 +128,32 @@ async function updateTask(params: Record<string, unknown>) {
   return { success: true, task_id, updated: Object.keys(updateFields).filter(k => k !== "updated_at") };
 }
 
+async function listFeedback(params: Record<string, unknown> = {}) {
+  const limit = Math.min(Number(params.limit ?? 50), 200);
+  const queryParts: string[] = [
+    "select=*",
+    "order=created_at.desc",
+    `limit=${limit}`,
+  ];
+
+  if (params.min_rating !== undefined) {
+    queryParts.push(`rating=gte.${Number(params.min_rating)}`);
+  }
+  if (params.max_rating !== undefined) {
+    queryParts.push(`rating=lte.${Number(params.max_rating)}`);
+  }
+  if (params.has_comment === true) {
+    queryParts.push("comment=not.is.null");
+    queryParts.push("comment=neq.");
+  }
+  if (params.since_days !== undefined) {
+    const sinceIso = new Date(Date.now() - Number(params.since_days) * 86400000).toISOString();
+    queryParts.push(`created_at=gte.${encodeURIComponent(sinceIso)}`);
+  }
+
+  return await dbGet("rk_feedback", queryParts.join("&"));
+}
+
 async function addNote(params: { inventory_id: string; note: string }) {
   const piano = await findPianoByInventoryId(params.inventory_id);
   const now = new Date().toISOString();
