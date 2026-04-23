@@ -1,0 +1,470 @@
+openapi: 3.1.0
+info:
+  title: Nick's Piano Workshop — Inventory API
+  version: 1.0.0
+  description: |
+    External-facing inventory API for Nick's Piano Workshop.
+
+    - **Read endpoints** are public and only return rows where `catalogue.visible = true`.
+      Visibility-flag fields (`show_labor_hours`, `show_task_list`, `show_cost_breakdown`)
+      gate which detail blocks are included in `GET /inventory/{inventory_id}`.
+    - **Write endpoints** require a bearer token stored as the Lovable Cloud secret
+      `INVENTORY_API_KEY_WRITE`.
+    - Purchase price, private notes, client records, donation records, and hidden
+      expenses are never returned.
+
+servers:
+  - url: https://bxurezzzvdnuiiwtaqxw.supabase.co/functions/v1/inventory-api
+    description: Production
+
+tags:
+  - name: Inventory (public)
+    description: Public read endpoints. No auth.
+  - name: Inventory (admin)
+    description: Protected write endpoints. Require bearer token.
+
+security: []
+
+paths:
+  /inventory:
+    get:
+      tags: [Inventory (public)]
+      summary: List visible pianos
+      description: Returns all pianos with `catalogue.visible = true`, in flat list shape.
+      operationId: listInventory
+      responses:
+        '200':
+          description: List of visible pianos.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventoryListItem'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /inventory/{inventory_id}:
+    parameters:
+      - $ref: '#/components/parameters/InventoryId'
+    get:
+      tags: [Inventory (public)]
+      summary: Get one piano
+      description: |
+        Returns flat detail for a single visible piano. Returns `404` if the piano
+        does not exist or is not marked visible in the catalogue.
+
+        Conditional blocks:
+        - `total_labor_hours` — only when `show_labor_hours = true`
+        - `completed_tasks` — only when `show_task_list = true`
+        - `cost_breakdown` — only when `show_cost_breakdown = true`
+      operationId: getInventoryItem
+      responses:
+        '200':
+          description: Piano detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    $ref: '#/components/schemas/InventoryDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    patch:
+      tags: [Inventory (admin)]
+      summary: Update writable fields on a piano
+      description: |
+        Update a controlled subset of fields on the piano and its catalogue row.
+        Any field in the request body that is not in the writable allow-list is
+        silently dropped and reported back in `ignored[]`.
+
+        Every successful write is appended to the activity log with
+        `user_name = "inventory-api"`.
+      operationId: updateInventoryItem
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryPatchRequest'
+            examples:
+              listForSale:
+                summary: List a piano for sale
+                value:
+                  status: ready_for_sale
+                  asking_price: 4500
+                  visible: true
+                  price_display: "$4,500"
+                  highlights: ["New strings", "Refinished cabinet"]
+              togglePublicVisibility:
+                summary: Hide from public catalogue
+                value:
+                  visible: false
+      responses:
+        '200':
+          description: Update accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryPatchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /inventory/{inventory_id}/photos:
+    parameters:
+      - $ref: '#/components/parameters/InventoryId'
+    get:
+      tags: [Inventory (public)]
+      summary: Get photo gallery for a piano
+      description: |
+        Returns the photo gallery for a visible piano, ordered by primary first
+        then `sort_order`. Returns `404` if the piano is not visible.
+      operationId: getInventoryPhotos
+      responses:
+        '200':
+          description: Photo list.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Photo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: |
+        Send the Lovable Cloud secret `INVENTORY_API_KEY_WRITE` as
+        `Authorization: Bearer <token>`.
+
+  parameters:
+    InventoryId:
+      name: inventory_id
+      in: path
+      required: true
+      description: Workshop inventory identifier (e.g. `KI-2950`, `KIM-1`).
+      schema:
+        type: string
+        minLength: 1
+        example: KI-2950
+
+  responses:
+    BadRequest:
+      description: Malformed request or no writable fields supplied.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: bad_request
+              message: "No writable fields supplied. Allowed: status, asking_price, visible, price_display, public_description, highlights, public_restoration_note, show_labor_hours, show_task_list, show_cost_breakdown, show_restoration_notes"
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: unauthorized
+              message: Invalid or missing API key
+    NotFound:
+      description: Piano not found or not publicly visible.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: not_found
+              message: Piano not found
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: internal_error
+              message: Unexpected error
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - not_found
+                - unauthorized
+                - bad_request
+                - method_not_allowed
+                - internal_error
+            message:
+              type: string
+
+    InventoryListItem:
+      type: object
+      required:
+        - inventory_id
+        - piano_id
+        - brand
+        - model
+        - year
+        - finish
+        - piano_type
+        - status
+        - asking_price
+        - price_display
+        - hero_photo_url
+        - public_description
+        - highlights
+        - visible
+      properties:
+        inventory_id:
+          type: string
+          example: KI-2950
+        piano_id:
+          type: string
+          format: uuid
+        brand:
+          type: string
+        model:
+          type: string
+        year:
+          type: string
+          description: Free-form year string (may include "c." or ranges).
+          example: "c. 1935–1960"
+        finish:
+          type: string
+        piano_type:
+          type: string
+          example: baby_grand
+        status:
+          type: string
+          example: ready_for_sale
+        asking_price:
+          type: [number, 'null']
+        price_display:
+          type: string
+          example: "$4,500"
+        hero_photo_url:
+          type: [string, 'null']
+          format: uri
+        public_description:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        visible:
+          type: boolean
+
+    InventoryDetail:
+      allOf:
+        - $ref: '#/components/schemas/InventoryListItem'
+        - type: object
+          required:
+            - country_of_origin
+            - bench_included
+            - show_restoration_notes
+            - public_restoration_note
+            - show_labor_hours
+            - show_task_list
+            - show_cost_breakdown
+            - photos
+          properties:
+            country_of_origin:
+              type: string
+            bench_included:
+              type: boolean
+            show_restoration_notes:
+              type: boolean
+            public_restoration_note:
+              type: string
+            show_labor_hours:
+              type: boolean
+            show_task_list:
+              type: boolean
+            show_cost_breakdown:
+              type: boolean
+            photos:
+              type: array
+              items:
+                $ref: '#/components/schemas/Photo'
+            total_labor_hours:
+              type: number
+              description: Only present when `show_labor_hours = true`.
+            completed_tasks:
+              type: array
+              description: Only present when `show_task_list = true`.
+              items:
+                $ref: '#/components/schemas/CompletedTask'
+            cost_breakdown:
+              description: Only present when `show_cost_breakdown = true`.
+              $ref: '#/components/schemas/CostBreakdown'
+
+    Photo:
+      type: object
+      required: [id, url, category, is_primary]
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        caption:
+          type: [string, 'null']
+        category:
+          type: string
+          example: acquired
+        is_primary:
+          type: boolean
+        sort_order:
+          type: integer
+
+    CompletedTask:
+      type: object
+      required: [title, category, labor_hours, completion_date]
+      properties:
+        title:
+          type: string
+        category:
+          type: string
+        labor_hours:
+          type: number
+        completion_date:
+          type: [string, 'null']
+          format: date
+
+    CostBreakdown:
+      type: object
+      description: |
+        `other_cost = moving_cost + marketing_cost`. `restoration_investment`
+        is the sum of labor_cost + parts_cost + other_cost. Purchase price
+        is intentionally excluded.
+      required:
+        - labor_hours
+        - labor_cost
+        - parts_cost
+        - other_cost
+        - restoration_investment
+      properties:
+        labor_hours:
+          type: number
+        labor_cost:
+          type: integer
+        parts_cost:
+          type: number
+        other_cost:
+          type: number
+        restoration_investment:
+          type: number
+
+    InventoryPatchRequest:
+      type: object
+      description: |
+        Writable fields. Anything else in the body is ignored and reported in
+        `ignored[]` on the response.
+
+        On the `pianos` table:
+          - `status`
+          - `asking_price`
+
+        On the `catalogue` table:
+          - `visible`
+          - `price_display`
+          - `public_description`
+          - `highlights`
+          - `public_restoration_note`
+          - `show_labor_hours`
+          - `show_task_list`
+          - `show_cost_breakdown`
+          - `show_restoration_notes`
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        status:
+          type: string
+          description: Piano workflow status (e.g. `ready_for_sale`, `cabinet_work`).
+        asking_price:
+          type: [number, 'null']
+        visible:
+          type: boolean
+        price_display:
+          type: string
+        public_description:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        public_restoration_note:
+          type: string
+        show_labor_hours:
+          type: boolean
+        show_task_list:
+          type: boolean
+        show_cost_breakdown:
+          type: boolean
+        show_restoration_notes:
+          type: boolean
+
+    InventoryPatchResponse:
+      type: object
+      required: [success, inventory_id, updated, ignored]
+      properties:
+        success:
+          type: boolean
+          example: true
+        inventory_id:
+          type: string
+          example: KI-2950
+        updated:
+          type: array
+          description: Field names that were actually written.
+          items:
+            type: string
+          example: [status, asking_price, visible, price_display]
+        ignored:
+          type: array
+          description: Field names that were dropped because they are not writable.
+          items:
+            type: string
+          example: []
