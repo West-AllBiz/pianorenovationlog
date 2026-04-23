@@ -1,1 +1,7 @@
 project_id = "bxurezzzvdnuiiwtaqxw"
+
+[functions.mcp-piano]
+verify_jwt = false
+
+[functions.inventory-api]
+verify_jwt = false
