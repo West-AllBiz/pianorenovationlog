@@ -11,12 +11,36 @@ const WRITE_KEY = Deno.env.get("INVENTORY_API_KEY_WRITE") ?? "";
 
 const ALLOWED_ORIGINS = new Set([
   "https://nickspianoservices.com",
+  "https://www.nickspianoservices.com",
+  "https://nickspianoservices.lovable.app",
   "https://nworkshop.nickspianoservices.com",
   "https://pianorenovationlog.lovable.app",
 ]);
 
+// Preview pattern for the NicksPianoServices Lovable project only.
+// Matches hosts like:
+//   id-preview--6b47c1eb-36db-498e-8757-fee96393607f.lovable.app
+//   preview--6b47c1eb-36db-498e-8757-fee96393607f.lovable.app
+//   6b47c1eb-36db-498e-8757-fee96393607f.lovable.app
+const NPS_PREVIEW_PROJECT_ID = "6b47c1eb-36db-498e-8757-fee96393607f";
+const NPS_PREVIEW_HOST_RE = new RegExp(
+  `^(?:[a-z0-9-]+--)?${NPS_PREVIEW_PROJECT_ID}\\.lovable\\.app$`,
+  "i",
+);
+
+function isOriginAllowed(origin: string): boolean {
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  try {
+    const u = new URL(origin);
+    if (u.protocol !== "https:") return false;
+    return NPS_PREVIEW_HOST_RE.test(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function corsHeaders(origin: string | null) {
-  const allowed = origin && ALLOWED_ORIGINS.has(origin) ? origin : "";
+  const allowed = origin && isOriginAllowed(origin) ? origin : "";
   return {
     "Access-Control-Allow-Origin": allowed,
     "Vary": "Origin",
