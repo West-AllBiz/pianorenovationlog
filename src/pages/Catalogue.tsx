@@ -98,7 +98,14 @@ export default function Catalogue() {
             <Music className="h-5 w-5 text-primary" />
             <span className="font-heading text-lg font-bold text-primary">Nick's Piano Services</span>
           </div>
-          <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground font-mono">Sign In</Link>
+          <Link
+            to="/login"
+            aria-label="Staff sign in"
+            title="Staff sign in"
+            className="text-muted-foreground/40 hover:text-muted-foreground text-[10px] font-mono uppercase tracking-wider"
+          >
+            Staff
+          </Link>
         </div>
       </header>
 
