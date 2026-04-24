@@ -40,7 +40,7 @@ const AppRoutes = () => (
     <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/catalogue" element={<Catalogue />} />
     <Route path="/catalogue/:id" element={<CatalogueDetail />} />
-    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/" element={<Catalogue />} />
     <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/inventory" element={<Inventory />} />
