@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Music, ArrowRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Lock, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +14,6 @@ export default function Login() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Generate a deterministic email and password from the name
   const getCredentials = (inputName: string) => {
     const slug = inputName.trim().toLowerCase().replace(/\s+/g, '.');
     return {
@@ -31,19 +30,13 @@ export default function Login() {
     const { email, password } = getCredentials(name);
 
     try {
-      // Try signing in first
       const { error: signInError } = await signIn(email, password);
-
       if (signInError) {
-        // If login fails, create the account automatically
         const { error: signUpError } = await signUp(email, password, name.trim());
         if (signUpError) throw signUpError;
-
-        // Auto-confirmed, so sign in immediately
         const { error: retryError } = await signIn(email, password);
         if (retryError) throw retryError;
       }
-
       navigate('/dashboard');
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -53,66 +46,64 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden lg:flex lg:w-1/2 bg-sidebar items-center justify-center p-12">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-md text-center">
-          <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-sidebar-primary">
-            <Music className="h-8 w-8 text-sidebar-primary-foreground" />
-          </div>
-          <h1 className="font-heading text-4xl font-bold text-sidebar-accent-foreground mb-4">Piano Renovation Log</h1>
-          <p className="text-sidebar-foreground/70 text-lg leading-relaxed">
-            Manage your entire piano workshop — from acquisition through restoration to sale — in one elegant workspace.
-          </p>
-        </motion.div>
-      </div>
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Subtle top bar */}
+      <header className="border-b border-border">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          <Link to="/catalogue" className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-mono">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Catalogue
+          </Link>
+          <span className="text-xs font-mono text-muted-foreground/60 uppercase tracking-wider">
+            Staff Portal
+          </span>
+        </div>
+      </header>
 
-      <div className="flex flex-1 items-center justify-center p-6 sm:p-12">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary">
-              <Music className="h-5 w-5 text-primary-foreground" />
+      <div className="flex-1 flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-xs"
+        >
+          <div className="flex justify-center mb-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted border border-border">
+              <Lock className="h-4 w-4 text-muted-foreground" />
             </div>
-            <h1 className="font-heading text-2xl font-bold">Piano Renovation Log</h1>
           </div>
 
-          <h2 className="font-heading text-2xl font-semibold mb-1">Welcome</h2>
-          <p className="text-muted-foreground mb-8">Enter your name to get started</p>
+          <h1 className="font-heading text-lg font-semibold text-center mb-1">Workshop Sign In</h1>
+          <p className="text-xs text-muted-foreground text-center font-mono mb-8">
+            Authorized personnel only
+          </p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Your Name</Label>
+              <Label htmlFor="name" className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                Name
+              </Label>
               <Input
                 id="name"
-                placeholder="Nick"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-11"
+                className="h-10"
                 required
                 autoFocus
               />
             </div>
-            <Button type="submit" className="w-full h-11 font-medium" disabled={loading || !name.trim()}>
-              {loading ? 'Entering...' : 'Enter Workshop'}
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button
+              type="submit"
+              variant="outline"
+              className="w-full h-10 font-mono text-sm"
+              disabled={loading || !name.trim()}
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
 
-          <div className="mt-6 flex items-center gap-3">
-            <div className="flex-1 border-t border-border" />
-            <span className="text-xs text-muted-foreground font-mono">or</span>
-            <div className="flex-1 border-t border-border" />
-          </div>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-muted-foreground mb-2">🎹 Browse Available Pianos</p>
-            <p className="text-xs text-muted-foreground mb-3">No account needed</p>
-            <Button variant="outline" className="w-full h-11 font-medium border-teal text-teal hover:bg-teal/10" onClick={() => navigate('/catalogue')}>
-              View Catalogue
-            </Button>
-          </div>
-
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Nick is admin · Others join as contributors
+          <p className="mt-8 text-center text-[10px] font-mono text-muted-foreground/50 uppercase tracking-wider">
+            Nick's Piano Services · Internal
           </p>
         </motion.div>
       </div>
