@@ -48,6 +48,7 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
     year_built: '', country_of_origin: '', finish: '', bench_included: false,
     ownership_category: 'business_inventory', source: 'other', color_tag: '',
     status: 'acquired',
+    sale_type: 'internal_inventory',
     client_name: '', client_contact: '', work_authorized: false,
     donation_recipient: '', donation_status: 'pending',
     purchase_price: '', moving_cost: '', estimated_sale_price: '', notes: '',
@@ -55,7 +56,14 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
     issues: Object.fromEntries(STRUCTURAL_ISSUES.map(i => [i.key, false])) as Record<string, boolean>,
   });
 
-  const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
+  const set = (key: string, value: any) => setForm(f => {
+    if (key === 'ownership_category') {
+      // Default sale_type based on ownership for backwards-compatible behavior.
+      const nextSale = value === 'client_piano' ? 'not_for_sale' : 'internal_inventory';
+      return { ...f, ownership_category: value, sale_type: nextSale };
+    }
+    return { ...f, [key]: value };
+  });
   const setCondition = (key: string, val: number) =>
     setForm(f => ({ ...f, conditions: { ...f.conditions, [key]: val } }));
   const toggleIssue = (key: string) =>
@@ -97,9 +105,10 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         ownership_category: form.ownership_category,
         source: form.source,
         status: form.status,
+        sale_type: form.sale_type,
         color_tag: form.color_tag || null,
         tag: `Tag ${nextNum}`,
-      }).select().single();
+      } as any).select().single();
 
       if (error) throw error;
 
@@ -236,6 +245,27 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
                   <SelectItem value="restoration_archive">Restoration Archive</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Sale Type *</Label>
+              <Select value={form.sale_type} onValueChange={v => set('sale_type', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="internal_inventory">Internal Inventory</SelectItem>
+                  <SelectItem value="consignment">Consignment (Client-Owned)</SelectItem>
+                  <SelectItem value="not_for_sale">Not for Sale</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.sale_type === 'consignment' && (
+                <p className="text-xs text-muted-foreground">
+                  This piano will be publicly listed on behalf of a client. Client identity and private notes are never exposed.
+                </p>
+              )}
+              {form.sale_type === 'not_for_sale' && (
+                <p className="text-xs text-muted-foreground">
+                  Hidden from public catalogue and the public inventory API.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Source *</Label>

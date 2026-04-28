@@ -117,6 +117,7 @@ function pickHero(photos: any[] | undefined): string | null {
 // ---------- Shapers ----------
 
 function shapeListItem(piano: any, cat: any, heroUrl: string | null) {
+  const saleType = piano.sale_type ?? "internal_inventory";
   return {
     inventory_id: piano.inventory_id,
     piano_id: piano.id,
@@ -132,6 +133,8 @@ function shapeListItem(piano: any, cat: any, heroUrl: string | null) {
     public_description: cat?.public_description ?? "",
     highlights: cat?.highlights ?? [],
     visible: !!cat?.visible,
+    sale_type: saleType,
+    is_consignment: saleType === "consignment",
   };
 }
 
@@ -204,6 +207,17 @@ async function shapeDetail(piano: any, cat: any, photos: any[]) {
 
 // ---------- Handlers ----------
 
+// A piano is publicly listable when:
+//   - sale_type != 'not_for_sale', AND
+//   - ownership is not client_piano, OR sale_type = 'consignment'
+function isPubliclyListable(piano: any): boolean {
+  if (!piano) return false;
+  const saleType = piano.sale_type ?? "internal_inventory";
+  if (saleType === "not_for_sale") return false;
+  if (piano.ownership_category === "client_piano" && saleType !== "consignment") return false;
+  return true;
+}
+
 async function handleList(origin: string | null) {
   const visibleCat: any[] = await dbGet(
     "catalogue",
@@ -213,12 +227,13 @@ async function handleList(origin: string | null) {
 
   const pianoIds = visibleCat.map((c) => c.piano_id);
   const inList = pianoIds.map((id) => `"${id}"`).join(",");
-  const pianos: any[] = await dbGet(
+  const allPianos: any[] = await dbGet(
     "pianos",
-    `id=in.(${inList})&select=id,inventory_id,brand,model,year_built,finish,piano_type,status,asking_price,country_of_origin,bench_included&order=inventory_id.asc`,
+    `id=in.(${inList})&select=id,inventory_id,brand,model,year_built,finish,piano_type,status,asking_price,country_of_origin,bench_included,ownership_category,sale_type&order=inventory_id.asc`,
   );
+  const pianos = allPianos.filter(isPubliclyListable);
 
-  const photoMap = await getPhotosForPianoIds(pianoIds);
+  const photoMap = await getPhotosForPianoIds(pianos.map((p) => p.id));
   const catByPiano = new Map(visibleCat.map((c) => [c.piano_id, c]));
 
   const data = pianos.map((p) =>
@@ -238,6 +253,9 @@ async function findPianoByInventoryId(inventoryId: string) {
 async function handleDetail(inventoryId: string, origin: string | null) {
   const piano = await findPianoByInventoryId(inventoryId);
   if (!piano) return errorResponse("not_found", "Piano not found", 404, origin);
+  if (!isPubliclyListable(piano)) {
+    return errorResponse("not_found", "Piano not found", 404, origin);
+  }
 
   const catRows = await dbGet(
     "catalogue",
@@ -256,6 +274,9 @@ async function handleDetail(inventoryId: string, origin: string | null) {
 async function handlePhotos(inventoryId: string, origin: string | null) {
   const piano = await findPianoByInventoryId(inventoryId);
   if (!piano) return errorResponse("not_found", "Piano not found", 404, origin);
+  if (!isPubliclyListable(piano)) {
+    return errorResponse("not_found", "Piano not found", 404, origin);
+  }
 
   const catRows = await dbGet(
     "catalogue",

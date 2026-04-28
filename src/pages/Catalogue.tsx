@@ -41,7 +41,7 @@ export default function Catalogue() {
       if (pianoIds.length === 0) return [];
 
       const [pianos, photos, charNotes, tasks] = await Promise.all([
-        supabase.from('pianos').select('id, brand, model, piano_type, year_built, country_of_origin, finish_plan, selling_channel, inventory_id').in('id', pianoIds),
+        supabase.from('pianos').select('id, brand, model, piano_type, year_built, country_of_origin, finish_plan, selling_channel, inventory_id, ownership_category, sale_type').in('id', pianoIds),
         supabase.from('piano_photos').select('piano_id, url, is_primary, sort_order, category').in('piano_id', pianoIds),
         supabase.from('character_notes').select('piano_id, tonal_character, action_feel, musical_suitability, cabinet_character').in('piano_id', pianoIds),
         supabase.from('restoration_tasks').select('piano_id, status, labor_hours').in('piano_id', pianoIds),
@@ -64,15 +64,21 @@ export default function Catalogue() {
   });
 
   const filtered = listings.filter((l: any) => {
+    // Hide pianos that aren't publicly listable (defense in depth; RLS also enforces).
+    const p = l.piano;
+    const saleType = p?.sale_type || 'internal_inventory';
+    if (saleType === 'not_for_sale') return false;
+    if (p?.ownership_category === 'client_piano' && saleType !== 'consignment') return false;
+
     if (filter === 'all') return true;
     if (filter === 'available') return l.status === 'available';
     if (filter === 'coming_soon') return l.status === 'coming_soon' || l.status === 'in_progress';
     if (filter === 'custom') {
-      const fp = (l.piano?.finish_plan || '').toLowerCase();
+      const fp = (p?.finish_plan || '').toLowerCase();
       return fp.includes('custom') || fp.includes('gloss');
     }
     if (filter === 'antique') {
-      const y = parseInt(l.piano?.year_built || '9999');
+      const y = parseInt(p?.year_built || '9999');
       return y < 1960;
     }
     return true;
@@ -177,10 +183,15 @@ export default function Catalogue() {
                         <h3 className="font-heading font-bold text-lg">{p?.brand} {p?.model || ''}</h3>
                         <span className={`status-badge text-[10px] flex-shrink-0 ${b.color}`}>{b.label}</span>
                       </div>
-                      <p className="font-mono text-xs text-muted-foreground mb-3">
+                      <p className="font-mono text-xs text-muted-foreground mb-2">
                         {p?.year_built ? `c. ${p.year_built}` : ''}{p?.year_built && p?.piano_type ? ' · ' : ''}{p?.piano_type ? p.piano_type.charAt(0).toUpperCase() + p.piano_type.slice(1) : ''}
                         {p?.country_of_origin ? ` · ${p.country_of_origin}` : ''}
                       </p>
+                      {p?.sale_type === 'consignment' && (
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/70 mb-3">
+                          Available on Consignment
+                        </p>
+                      )}
 
                       {/* Highlights */}
                       {listing.highlights && listing.highlights.length > 0 && (
