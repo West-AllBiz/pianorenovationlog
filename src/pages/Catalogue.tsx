@@ -64,11 +64,11 @@ export default function Catalogue() {
   });
 
   const filtered = listings.filter((l: any) => {
-    // Hide pianos that aren't publicly listable (defense in depth; RLS also enforces).
+    // Single source of truth: sale_type. Hide anything not publicly listable
+    // (defense in depth; RLS also enforces). ownership_category is informational only.
     const p = l.piano;
     const saleType = p?.sale_type || 'internal_inventory';
-    if (saleType === 'not_for_sale') return false;
-    if (p?.ownership_category === 'client_piano' && saleType !== 'consignment') return false;
+    if (saleType !== 'internal_inventory' && saleType !== 'consignment') return false;
 
     if (filter === 'all') return true;
     if (filter === 'available') return l.status === 'available';
