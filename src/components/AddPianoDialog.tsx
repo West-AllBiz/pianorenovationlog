@@ -247,6 +247,27 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Sale Type *</Label>
+              <Select value={form.sale_type} onValueChange={v => set('sale_type', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="internal_inventory">Internal Inventory</SelectItem>
+                  <SelectItem value="consignment">Consignment (Client-Owned)</SelectItem>
+                  <SelectItem value="not_for_sale">Not for Sale</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.sale_type === 'consignment' && (
+                <p className="text-xs text-muted-foreground">
+                  This piano will be publicly listed on behalf of a client. Client identity and private notes are never exposed.
+                </p>
+              )}
+              {form.sale_type === 'not_for_sale' && (
+                <p className="text-xs text-muted-foreground">
+                  Hidden from public catalogue and the public inventory API.
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label>Source *</Label>
               <Select value={form.source} onValueChange={v => set('source', v)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
