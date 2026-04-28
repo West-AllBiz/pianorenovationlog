@@ -183,10 +183,15 @@ export default function Catalogue() {
                         <h3 className="font-heading font-bold text-lg">{p?.brand} {p?.model || ''}</h3>
                         <span className={`status-badge text-[10px] flex-shrink-0 ${b.color}`}>{b.label}</span>
                       </div>
-                      <p className="font-mono text-xs text-muted-foreground mb-3">
+                      <p className="font-mono text-xs text-muted-foreground mb-2">
                         {p?.year_built ? `c. ${p.year_built}` : ''}{p?.year_built && p?.piano_type ? ' · ' : ''}{p?.piano_type ? p.piano_type.charAt(0).toUpperCase() + p.piano_type.slice(1) : ''}
                         {p?.country_of_origin ? ` · ${p.country_of_origin}` : ''}
                       </p>
+                      {p?.sale_type === 'consignment' && (
+                        <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/70 mb-3">
+                          Available on Consignment
+                        </p>
+                      )}
 
                       {/* Highlights */}
                       {listing.highlights && listing.highlights.length > 0 && (
