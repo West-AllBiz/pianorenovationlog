@@ -56,7 +56,14 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
     issues: Object.fromEntries(STRUCTURAL_ISSUES.map(i => [i.key, false])) as Record<string, boolean>,
   });
 
-  const set = (key: string, value: any) => setForm(f => ({ ...f, [key]: value }));
+  const set = (key: string, value: any) => setForm(f => {
+    if (key === 'ownership_category') {
+      // Default sale_type based on ownership for backwards-compatible behavior.
+      const nextSale = value === 'client_piano' ? 'not_for_sale' : 'internal_inventory';
+      return { ...f, ownership_category: value, sale_type: nextSale };
+    }
+    return { ...f, [key]: value };
+  });
   const setCondition = (key: string, val: number) =>
     setForm(f => ({ ...f, conditions: { ...f.conditions, [key]: val } }));
   const toggleIssue = (key: string) =>
@@ -93,6 +100,15 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         piano_type: form.piano_type,
         year_built: form.year_built || '',
         country_of_origin: form.country_of_origin || '',
+        finish: form.finish || '',
+        bench_included: form.bench_included,
+        ownership_category: form.ownership_category,
+        source: form.source,
+        status: form.status,
+        sale_type: form.sale_type,
+        color_tag: form.color_tag || null,
+        tag: `Tag ${nextNum}`,
+      } as any).select().single();
         finish: form.finish || '',
         bench_included: form.bench_included,
         ownership_category: form.ownership_category,
