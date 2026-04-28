@@ -43,11 +43,10 @@ export default function CatalogueDetail() {
         supabase.from('app_settings').select('value').eq('key', 'technician_hourly_rate').maybeSingle(),
       ]);
 
-      // Defense-in-depth: hide pianos that aren't publicly listable.
+      // Defense-in-depth: sale_type is the single source of truth.
       const piano = pianoRes.data as any;
       const saleType = piano?.sale_type || 'internal_inventory';
-      if (saleType === 'not_for_sale') return null;
-      if (piano?.ownership_category === 'client_piano' && saleType !== 'consignment') return null;
+      if (saleType !== 'internal_inventory' && saleType !== 'consignment') return null;
 
       const rateRaw = rateRes.data?.value;
       const hourlyRate = typeof rateRaw === 'number' ? rateRaw : Number(rateRaw) || 100;
