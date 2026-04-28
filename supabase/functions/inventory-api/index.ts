@@ -207,15 +207,13 @@ async function shapeDetail(piano: any, cat: any, photos: any[]) {
 
 // ---------- Handlers ----------
 
-// A piano is publicly listable when:
-//   - sale_type != 'not_for_sale', AND
-//   - ownership is not client_piano, OR sale_type = 'consignment'
+// Single source of truth for public sale visibility:
+//   sale_type IN ('internal_inventory', 'consignment')
+// ownership_category is informational only and never blocks public listing.
 function isPubliclyListable(piano: any): boolean {
   if (!piano) return false;
   const saleType = piano.sale_type ?? "internal_inventory";
-  if (saleType === "not_for_sale") return false;
-  if (piano.ownership_category === "client_piano" && saleType !== "consignment") return false;
-  return true;
+  return saleType === "internal_inventory" || saleType === "consignment";
 }
 
 async function handleList(origin: string | null) {
