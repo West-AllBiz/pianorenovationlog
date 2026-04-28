@@ -109,14 +109,6 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         color_tag: form.color_tag || null,
         tag: `Tag ${nextNum}`,
       } as any).select().single();
-        finish: form.finish || '',
-        bench_included: form.bench_included,
-        ownership_category: form.ownership_category,
-        source: form.source,
-        status: form.status,
-        color_tag: form.color_tag || null,
-        tag: `Tag ${nextNum}`,
-      }).select().single();
 
       if (error) throw error;
 
