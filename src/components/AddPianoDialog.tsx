@@ -48,6 +48,7 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
     year_built: '', country_of_origin: '', finish: '', bench_included: false,
     ownership_category: 'business_inventory', source: 'other', color_tag: '',
     status: 'acquired',
+    sale_type: 'internal_inventory',
     client_name: '', client_contact: '', work_authorized: false,
     donation_recipient: '', donation_status: 'pending',
     purchase_price: '', moving_cost: '', estimated_sale_price: '', notes: '',
