@@ -43,12 +43,18 @@ export default function CatalogueDetail() {
         supabase.from('app_settings').select('value').eq('key', 'technician_hourly_rate').maybeSingle(),
       ]);
 
+      // Defense-in-depth: hide pianos that aren't publicly listable.
+      const piano = pianoRes.data as any;
+      const saleType = piano?.sale_type || 'internal_inventory';
+      if (saleType === 'not_for_sale') return null;
+      if (piano?.ownership_category === 'client_piano' && saleType !== 'consignment') return null;
+
       const rateRaw = rateRes.data?.value;
       const hourlyRate = typeof rateRaw === 'number' ? rateRaw : Number(rateRaw) || 100;
 
       return {
         ...cat,
-        piano: pianoRes.data,
+        piano,
         photos: photosRes.data || [],
         character: charRes.data,
         tasks: tasksRes.data || [],
@@ -155,6 +161,11 @@ export default function CatalogueDetail() {
                 {p?.year_built ? `c. ${p.year_built}` : ''}{p?.piano_type ? ` · ${p.piano_type.charAt(0).toUpperCase() + p.piano_type.slice(1)}` : ''}
                 {p?.country_of_origin ? ` · ${p.country_of_origin}` : ''}
               </p>
+              {p?.sale_type === 'consignment' && (
+                <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground/70 mt-1">
+                  Available on Consignment
+                </p>
+              )}
             </div>
             <span className={`status-badge flex-shrink-0 ${b.color}`}>{b.label}</span>
           </div>
