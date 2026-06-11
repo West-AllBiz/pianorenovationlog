@@ -40,6 +40,38 @@ const TASK_STATUS_DISPLAY: Record<string, string> = {
   done: 'Complete', in_progress: 'In Progress', todo: 'Pending', blocked: 'Awaiting Parts', 'n/a': 'N/A',
 };
 
+// ── Share Button (public catalogue link) ────────────────
+function SharePianoButton({ pianoId }: { pianoId: string }) {
+  const url = `${window.location.origin}/catalogue/${pianoId}`;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'Public link copied', description: 'Visible in catalogue only if listing is published.' });
+    } catch {
+      toast({ title: 'Public link', description: url });
+    }
+  };
+  const share = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Piano', url }); return; } catch { /* fall through */ }
+    }
+    copy();
+  };
+  return (
+    <div className="flex items-center gap-1.5">
+      <Button variant="outline" size="sm" onClick={share} className="h-8 gap-1.5">
+        <Share2 className="h-3.5 w-3.5" /> Share
+      </Button>
+      <Button variant="ghost" size="icon" onClick={copy} className="h-8 w-8" title="Copy link">
+        <Copy className="h-3.5 w-3.5" />
+      </Button>
+      <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent" title="Open public page">
+        <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    </div>
+  );
+}
+
 // ── Inline Edit Field (auto-save on blur) ────────────────
 function InlineField({ label, value, onSave, type = 'text', options, canEdit: editable = true }: {
   label: string; value: string; onSave: (val: string) => void;
