@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Edit, X, Pencil, Plus, Trash2, Loader2, MinusCircle } from 'lucide-react';
+import { ArrowLeft, Edit, X, Pencil, Plus, Trash2, Loader2, MinusCircle, Share2, ExternalLink, Copy } from 'lucide-react';
 import { PianoPhotosSection } from '@/components/PianoPhotos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +39,38 @@ const TASK_STATUS_STYLES: Record<string, string> = {
 const TASK_STATUS_DISPLAY: Record<string, string> = {
   done: 'Complete', in_progress: 'In Progress', todo: 'Pending', blocked: 'Awaiting Parts', 'n/a': 'N/A',
 };
+
+// ── Share Button (public catalogue link) ────────────────
+function SharePianoButton({ pianoId }: { pianoId: string }) {
+  const url = `${window.location.origin}/catalogue/${pianoId}`;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'Public link copied', description: 'Visible in catalogue only if listing is published.' });
+    } catch {
+      toast({ title: 'Public link', description: url });
+    }
+  };
+  const share = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Piano', url }); return; } catch { /* fall through */ }
+    }
+    copy();
+  };
+  return (
+    <div className="flex items-center gap-1.5">
+      <Button variant="outline" size="sm" onClick={share} className="h-8 gap-1.5">
+        <Share2 className="h-3.5 w-3.5" /> Share
+      </Button>
+      <Button variant="ghost" size="icon" onClick={copy} className="h-8 w-8" title="Copy link">
+        <Copy className="h-3.5 w-3.5" />
+      </Button>
+      <a href={url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent" title="Open public page">
+        <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    </div>
+  );
+}
 
 // ── Inline Edit Field (auto-save on blur) ────────────────
 function InlineField({ label, value, onSave, type = 'text', options, canEdit: editable = true }: {
@@ -235,9 +267,12 @@ export default function PianoDetail() {
       )}
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-        <Link to="/inventory" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4">
-          <ArrowLeft className="h-4 w-4" /> Back to inventory
-        </Link>
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <Link to="/inventory" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Back to inventory
+          </Link>
+          <SharePianoButton pianoId={piano.id} />
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
           <div>
