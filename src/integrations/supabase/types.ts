@@ -541,6 +541,8 @@ export type Database = {
           buyer_contact: string | null
           buyer_name: string | null
           color_tag: string | null
+          consignment_commission_pct: number | null
+          consignment_terms: string | null
           country_of_origin: string | null
           created_at: string
           finish: string | null
@@ -560,6 +562,7 @@ export type Database = {
           purchase_date: string | null
           purchase_price: number | null
           roi_health: string | null
+          sale_type: Database["public"]["Enums"]["sale_type_enum"]
           selling_channel: string | null
           serial_number: string | null
           sold_date: string | null
@@ -580,6 +583,8 @@ export type Database = {
           buyer_contact?: string | null
           buyer_name?: string | null
           color_tag?: string | null
+          consignment_commission_pct?: number | null
+          consignment_terms?: string | null
           country_of_origin?: string | null
           created_at?: string
           finish?: string | null
@@ -599,6 +604,7 @@ export type Database = {
           purchase_date?: string | null
           purchase_price?: number | null
           roi_health?: string | null
+          sale_type?: Database["public"]["Enums"]["sale_type_enum"]
           selling_channel?: string | null
           serial_number?: string | null
           sold_date?: string | null
@@ -619,6 +625,8 @@ export type Database = {
           buyer_contact?: string | null
           buyer_name?: string | null
           color_tag?: string | null
+          consignment_commission_pct?: number | null
+          consignment_terms?: string | null
           country_of_origin?: string | null
           created_at?: string
           finish?: string | null
@@ -638,6 +646,7 @@ export type Database = {
           purchase_date?: string | null
           purchase_price?: number | null
           roi_health?: string | null
+          sale_type?: Database["public"]["Enums"]["sale_type_enum"]
           selling_channel?: string | null
           serial_number?: string | null
           sold_date?: string | null
@@ -860,6 +869,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "contributor" | "viewer"
+      sale_type_enum: "internal_inventory" | "consignment" | "not_for_sale"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -988,6 +998,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "contributor", "viewer"],
+      sale_type_enum: ["internal_inventory", "consignment", "not_for_sale"],
     },
   },
 } as const
