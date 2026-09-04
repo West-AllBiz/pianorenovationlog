@@ -21,6 +21,7 @@ import {
   type PianoStatus, type OwnershipCategory, type ColorTag, type RoiHealth, type PianoType,
   type ConditionScore, type TaskCategory,
 } from '@/types/piano';
+import { isPianoLike, itemKindLabel, itemDisplayName } from '@/types/itemKind';
 
 import CatalogueTab from '@/components/CatalogueTab';
 import { LaborSummary } from '@/components/LaborSummary';
