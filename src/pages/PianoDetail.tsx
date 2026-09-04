@@ -491,7 +491,7 @@ export default function PianoDetail() {
         )}
 
         {activeTab === 'Expenses' && (
-          <ExpensesContent pianoId={piano.id} expenses={expenses} clientRecord={clientRecord} donationRecord={donationRecord} canEdit={canEdit} />
+          <ExpensesContent pianoId={piano.id} itemKind={(piano as any).item_kind} expenses={expenses} clientRecord={clientRecord} donationRecord={donationRecord} canEdit={canEdit} />
         )}
 
         {activeTab === 'Character Notes' && (
