@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { PIANO_TYPE_LABELS, STATUS_LABELS, COLOR_TAG_LABELS } from '@/types/piano';
+import { ITEM_KIND_LABELS, isPianoLike, itemKindLabel } from '@/types/itemKind';
 
 interface AddPianoDialogProps {
   open: boolean;
