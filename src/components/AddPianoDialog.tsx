@@ -198,7 +198,7 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Add Piano — {currentStepName}</DialogTitle>
+          <DialogTitle className="font-heading">Add Workshop Item — {currentStepName}</DialogTitle>
           <DialogDescription>Step {step + 1} of {totalSteps}</DialogDescription>
         </DialogHeader>
 
@@ -213,7 +213,27 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         {currentStepName === 'Identification' && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Brand / Make *</Label>
+              <Label>Item Type *</Label>
+              <Select value={form.item_kind} onValueChange={v => { set('item_kind', v); setStep(0); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ITEM_KIND_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {!isPiano && (
+              <div className="space-y-2">
+                <Label>Item Name *</Label>
+                <Input value={form.item_name} onChange={e => set('item_name', e.target.value)} placeholder={`e.g. Antique oak ${kindLabel.toLowerCase()}`} />
+                <p className="text-xs text-muted-foreground">Piano brand, type and serial aren’t required for this item.</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>{isPiano ? 'Brand / Make *' : 'Brand / Maker'}</Label>
               <Input value={form.brand} onChange={e => set('brand', e.target.value)} placeholder="e.g. Baldwin, Steinway" />
             </div>
             <div className="space-y-2">
@@ -224,17 +244,20 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
               <Label>Serial Number</Label>
               <Input value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />
             </div>
-            <div className="space-y-2">
-              <Label>Piano Type *</Label>
-              <Select value={form.piano_type} onValueChange={v => set('piano_type', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PIANO_TYPE_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {isPiano && (
+              <div className="space-y-2">
+                <Label>Piano Type *</Label>
+                <Select value={form.piano_type} onValueChange={v => set('piano_type', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PIANO_TYPE_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Estimated Year</Label>
