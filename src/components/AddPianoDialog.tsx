@@ -44,12 +44,15 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
+    item_kind: 'piano', item_name: '',
     brand: '', model: '', serial_number: '', piano_type: 'upright',
     year_built: '', country_of_origin: '', finish: '', bench_included: false,
     ownership_category: 'business_inventory', source: 'other', color_tag: '',
     status: 'acquired',
     sale_type: 'internal_inventory',
     client_name: '', client_contact: '', work_authorized: false,
+    estimate: '', deposit_received: '', invoice_total: '', balance_due: '',
+    client_pickup_date: '', target_return_date: '', work_description: '',
     donation_recipient: '', donation_status: 'pending',
     purchase_price: '', moving_cost: '', estimated_sale_price: '', notes: '',
     conditions: Object.fromEntries(CONDITION_FIELDS.map(f => [f, 3])) as Record<string, number>,
@@ -72,14 +75,22 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
   const isBusinessInventory = form.ownership_category === 'business_inventory';
   const isClient = form.ownership_category === 'client_piano';
   const isDonation = form.ownership_category === 'donation_project';
+  const isPiano = isPianoLike(form.item_kind);
+  const kindLabel = itemKindLabel(form.item_kind);
 
   const canProceed = () => {
-    if (step === 0) return form.brand.trim() !== '' && form.piano_type !== '';
+    if (step === 0) {
+      return isPiano
+        ? form.brand.trim() !== '' && form.piano_type !== ''
+        : form.item_name.trim() !== '';
+    }
     if (step === 1) return form.ownership_category !== '' && form.source !== '' && form.status !== '';
     return true;
   };
 
-  const effectiveSteps = isBusinessInventory ? STEPS : STEPS.filter(s => s !== 'Financial');
+  const effectiveSteps = STEPS
+    .filter(s => (s === 'Financial' ? isBusinessInventory : true))
+    .filter(s => (s === 'Condition' ? isPiano : true));
   const totalSteps = effectiveSteps.length;
   const currentStepName = effectiveSteps[step];
 
@@ -94,14 +105,16 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
 
       const { data: piano, error } = await supabase.from('pianos').insert({
         inventory_id: inventoryId,
-        brand: form.brand,
+        item_kind: form.item_kind,
+        item_name: isPiano ? (form.item_name || null) : form.item_name,
+        brand: isPiano ? form.brand : (form.brand || form.item_name),
         model: form.model || '',
         serial_number: form.serial_number || '',
-        piano_type: form.piano_type,
+        piano_type: isPiano ? form.piano_type : form.item_kind,
         year_built: form.year_built || '',
         country_of_origin: form.country_of_origin || '',
         finish: form.finish || '',
-        bench_included: form.bench_included,
+        bench_included: isPiano ? form.bench_included : false,
         ownership_category: form.ownership_category,
         source: form.source,
         status: form.status,
@@ -112,12 +125,14 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
 
       if (error) throw error;
 
-      // Insert condition inspection
-      await supabase.from('condition_inspections').insert({
-        piano_id: piano.id,
-        ...form.conditions,
-        ...form.issues,
-      });
+      // Insert condition inspection (piano-like items only)
+      if (isPiano) {
+        await supabase.from('condition_inspections').insert({
+          piano_id: piano.id,
+          ...form.conditions,
+          ...form.issues,
+        });
+      }
 
       // Insert expenses if business inventory
       if (isBusinessInventory) {
@@ -132,13 +147,22 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
 
       // Insert client record
       if (isClient && form.client_name) {
+        const num = (v: string) => (v.trim() === '' ? null : parseFloat(v) || 0);
         await supabase.from('client_records').insert({
           piano_id: piano.id,
           client_name: form.client_name,
           client_contact: form.client_contact,
           work_authorized: form.work_authorized,
-        });
+          estimate: num(form.estimate),
+          deposit_received: num(form.deposit_received),
+          invoice_total: num(form.invoice_total),
+          balance_due: num(form.balance_due),
+          pickup_date: form.client_pickup_date || null,
+          target_return_date: form.target_return_date || null,
+          work_description: form.work_description || null,
+        } as any);
       }
+
 
       // Insert donation record
       if (isDonation) {
