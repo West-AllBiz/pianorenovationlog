@@ -272,10 +272,12 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
               <Label>Finish</Label>
               <Input value={form.finish} onChange={e => set('finish', e.target.value)} />
             </div>
-            <div className="flex items-center gap-3">
-              <Switch checked={form.bench_included} onCheckedChange={v => set('bench_included', v)} />
-              <Label>Bench Included</Label>
-            </div>
+            {isPiano && (
+              <div className="flex items-center gap-3">
+                <Switch checked={form.bench_included} onCheckedChange={v => set('bench_included', v)} />
+                <Label>Bench Included</Label>
+              </div>
+            )}
           </div>
         )}
 
