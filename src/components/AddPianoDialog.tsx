@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { PIANO_TYPE_LABELS, STATUS_LABELS, COLOR_TAG_LABELS } from '@/types/piano';
+import { ITEM_KIND_LABELS, isPianoLike, itemKindLabel } from '@/types/itemKind';
 
 interface AddPianoDialogProps {
   open: boolean;
@@ -44,12 +45,15 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
   const [saving, setSaving] = useState(false);
 
   const [form, setForm] = useState({
+    item_kind: 'piano', item_name: '',
     brand: '', model: '', serial_number: '', piano_type: 'upright',
     year_built: '', country_of_origin: '', finish: '', bench_included: false,
     ownership_category: 'business_inventory', source: 'other', color_tag: '',
     status: 'acquired',
     sale_type: 'internal_inventory',
     client_name: '', client_contact: '', work_authorized: false,
+    estimate: '', deposit_received: '', invoice_total: '', balance_due: '',
+    client_pickup_date: '', target_return_date: '', work_description: '',
     donation_recipient: '', donation_status: 'pending',
     purchase_price: '', moving_cost: '', estimated_sale_price: '', notes: '',
     conditions: Object.fromEntries(CONDITION_FIELDS.map(f => [f, 3])) as Record<string, number>,
@@ -72,14 +76,22 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
   const isBusinessInventory = form.ownership_category === 'business_inventory';
   const isClient = form.ownership_category === 'client_piano';
   const isDonation = form.ownership_category === 'donation_project';
+  const isPiano = isPianoLike(form.item_kind);
+  const kindLabel = itemKindLabel(form.item_kind);
 
   const canProceed = () => {
-    if (step === 0) return form.brand.trim() !== '' && form.piano_type !== '';
+    if (step === 0) {
+      return isPiano
+        ? form.brand.trim() !== '' && form.piano_type !== ''
+        : form.item_name.trim() !== '';
+    }
     if (step === 1) return form.ownership_category !== '' && form.source !== '' && form.status !== '';
     return true;
   };
 
-  const effectiveSteps = isBusinessInventory ? STEPS : STEPS.filter(s => s !== 'Financial');
+  const effectiveSteps = STEPS
+    .filter(s => (s === 'Financial' ? isBusinessInventory : true))
+    .filter(s => (s === 'Condition' ? isPiano : true));
   const totalSteps = effectiveSteps.length;
   const currentStepName = effectiveSteps[step];
 
@@ -94,14 +106,16 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
 
       const { data: piano, error } = await supabase.from('pianos').insert({
         inventory_id: inventoryId,
-        brand: form.brand,
+        item_kind: form.item_kind,
+        item_name: isPiano ? (form.item_name || null) : form.item_name,
+        brand: isPiano ? form.brand : (form.brand || form.item_name),
         model: form.model || '',
         serial_number: form.serial_number || '',
-        piano_type: form.piano_type,
+        piano_type: isPiano ? form.piano_type : form.item_kind,
         year_built: form.year_built || '',
         country_of_origin: form.country_of_origin || '',
         finish: form.finish || '',
-        bench_included: form.bench_included,
+        bench_included: isPiano ? form.bench_included : false,
         ownership_category: form.ownership_category,
         source: form.source,
         status: form.status,
@@ -112,12 +126,14 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
 
       if (error) throw error;
 
-      // Insert condition inspection
-      await supabase.from('condition_inspections').insert({
-        piano_id: piano.id,
-        ...form.conditions,
-        ...form.issues,
-      });
+      // Insert condition inspection (piano-like items only)
+      if (isPiano) {
+        await supabase.from('condition_inspections').insert({
+          piano_id: piano.id,
+          ...form.conditions,
+          ...form.issues,
+        });
+      }
 
       // Insert expenses if business inventory
       if (isBusinessInventory) {
@@ -132,13 +148,22 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
 
       // Insert client record
       if (isClient && form.client_name) {
+        const num = (v: string) => (v.trim() === '' ? null : parseFloat(v) || 0);
         await supabase.from('client_records').insert({
           piano_id: piano.id,
           client_name: form.client_name,
           client_contact: form.client_contact,
           work_authorized: form.work_authorized,
-        });
+          estimate: num(form.estimate),
+          deposit_received: num(form.deposit_received),
+          invoice_total: num(form.invoice_total),
+          balance_due: num(form.balance_due),
+          pickup_date: form.client_pickup_date || null,
+          target_return_date: form.target_return_date || null,
+          work_description: form.work_description || null,
+        } as any);
       }
+
 
       // Insert donation record
       if (isDonation) {
@@ -154,16 +179,16 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         piano_id: piano.id,
         user_id: user.id,
         user_name: profile?.full_name || user.email || 'Unknown',
-        action_description: `Piano added by ${profile?.full_name || 'user'}`,
+        action_description: `${kindLabel} added by ${profile?.full_name || 'user'}`,
       });
 
       qc.invalidateQueries({ queryKey: ['pianos'] });
-      toast({ title: 'Piano added', description: `${form.brand} (${inventoryId}) has been added to inventory.` });
+      toast({ title: `${kindLabel} added`, description: `${isPiano ? form.brand : form.item_name} (${inventoryId}) has been added to inventory.` });
       onOpenChange(false);
       setStep(0);
       navigate(`/piano/${piano.id}`);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Failed to save piano', variant: 'destructive' });
+      toast({ title: 'Error', description: err.message || 'Failed to save item', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -173,7 +198,7 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Add Piano — {currentStepName}</DialogTitle>
+          <DialogTitle className="font-heading">Add Workshop Item — {currentStepName}</DialogTitle>
           <DialogDescription>Step {step + 1} of {totalSteps}</DialogDescription>
         </DialogHeader>
 
@@ -188,7 +213,27 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         {currentStepName === 'Identification' && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Brand / Make *</Label>
+              <Label>Item Type *</Label>
+              <Select value={form.item_kind} onValueChange={v => { set('item_kind', v); setStep(0); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ITEM_KIND_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {!isPiano && (
+              <div className="space-y-2">
+                <Label>Item Name *</Label>
+                <Input value={form.item_name} onChange={e => set('item_name', e.target.value)} placeholder={`e.g. Antique oak ${kindLabel.toLowerCase()}`} />
+                <p className="text-xs text-muted-foreground">Piano brand, type and serial aren’t required for this item.</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>{isPiano ? 'Brand / Make *' : 'Brand / Maker'}</Label>
               <Input value={form.brand} onChange={e => set('brand', e.target.value)} placeholder="e.g. Baldwin, Steinway" />
             </div>
             <div className="space-y-2">
@@ -199,17 +244,20 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
               <Label>Serial Number</Label>
               <Input value={form.serial_number} onChange={e => set('serial_number', e.target.value)} />
             </div>
-            <div className="space-y-2">
-              <Label>Piano Type *</Label>
-              <Select value={form.piano_type} onValueChange={v => set('piano_type', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PIANO_TYPE_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {isPiano && (
+              <div className="space-y-2">
+                <Label>Piano Type *</Label>
+                <Select value={form.piano_type} onValueChange={v => set('piano_type', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(PIANO_TYPE_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Estimated Year</Label>
@@ -224,10 +272,12 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
               <Label>Finish</Label>
               <Input value={form.finish} onChange={e => set('finish', e.target.value)} />
             </div>
-            <div className="flex items-center gap-3">
-              <Switch checked={form.bench_included} onCheckedChange={v => set('bench_included', v)} />
-              <Label>Bench Included</Label>
-            </div>
+            {isPiano && (
+              <div className="flex items-center gap-3">
+                <Switch checked={form.bench_included} onCheckedChange={v => set('bench_included', v)} />
+                <Label>Bench Included</Label>
+              </div>
+            )}
           </div>
         )}
 
@@ -311,6 +361,36 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
                   <Label>Client Contact</Label>
                   <Input value={form.client_contact} onChange={e => set('client_contact', e.target.value)} />
                 </div>
+                <div className="space-y-2">
+                  <Label>{isPiano ? 'Work Description' : `Work Requested on ${kindLabel}`}</Label>
+                  <Textarea value={form.work_description} onChange={e => set('work_description', e.target.value)} rows={3} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Estimate ($)</Label>
+                    <Input type="number" value={form.estimate} onChange={e => set('estimate', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Deposit Received ($)</Label>
+                    <Input type="number" value={form.deposit_received} onChange={e => set('deposit_received', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Invoice Total ($)</Label>
+                    <Input type="number" value={form.invoice_total} onChange={e => set('invoice_total', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Balance Due ($)</Label>
+                    <Input type="number" value={form.balance_due} onChange={e => set('balance_due', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Target Return Date</Label>
+                    <Input type="date" value={form.target_return_date} onChange={e => set('target_return_date', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{isPiano ? 'Pickup Date' : 'Collection Date'}</Label>
+                    <Input type="date" value={form.client_pickup_date} onChange={e => set('client_pickup_date', e.target.value)} />
+                  </div>
+                </div>
                 <div className="flex items-center gap-3">
                   <Switch checked={form.work_authorized} onCheckedChange={v => set('work_authorized', v)} />
                   <Label>Work Authorized</Label>
@@ -319,6 +399,7 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
             )}
 
             {isDonation && (
+
               <>
                 <div className="space-y-2">
                   <Label>Donation Recipient</Label>
@@ -402,8 +483,8 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         {currentStepName === 'Review' && (
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              <div className="text-muted-foreground">Brand</div><div className="font-medium">{form.brand}</div>
-              <div className="text-muted-foreground">Type</div><div className="font-medium capitalize">{form.piano_type.replace(/_/g, ' ')}</div>
+              <div className="text-muted-foreground">Item</div><div className="font-medium">{isPiano ? `${form.brand} ${form.model}`.trim() : form.item_name}</div>
+              <div className="text-muted-foreground">Type</div><div className="font-medium capitalize">{isPiano ? form.piano_type.replace(/_/g, ' ') : kindLabel}</div>
               <div className="text-muted-foreground">Serial</div><div className="font-medium">{form.serial_number || '—'}</div>
               <div className="text-muted-foreground">Ownership</div><div className="font-medium capitalize">{form.ownership_category.replace(/_/g, ' ')}</div>
               <div className="text-muted-foreground">Source</div><div className="font-medium capitalize">{form.source.replace(/_/g, ' ')}</div>
@@ -423,7 +504,7 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
           {step < totalSteps - 1 ? (
             <Button onClick={() => setStep(step + 1)} disabled={!canProceed()}>Next</Button>
           ) : (
-            <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Piano'}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : `Save ${kindLabel}`}</Button>
           )}
         </div>
       </DialogContent>

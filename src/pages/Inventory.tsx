@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { usePianos } from '@/hooks/usePianos';
 import { useAuth } from '@/hooks/useAuth';
 import { AddPianoDialog } from '@/components/AddPianoDialog';
+import { itemDisplayName } from '@/types/itemKind';
 import { STATUS_LABELS, STATUS_COLORS, PIANO_TYPE_LABELS, OWNERSHIP_LABELS, OWNERSHIP_COLORS, COLOR_TAG_HEX } from '@/types/piano';
 import { PianoPhotoThumbnail } from '@/components/PianoPhotos';
 import type { PianoStatus, OwnershipCategory, ColorTag, PianoType } from '@/types/piano';
@@ -25,6 +26,7 @@ export default function Inventory() {
       const s = search.toLowerCase();
       const matchesSearch = !s ||
         p.brand.toLowerCase().includes(s) ||
+        ((p as any).item_name || '').toLowerCase().includes(s) ||
         (p.model || '').toLowerCase().includes(s) ||
         (p.serial_number || '').toLowerCase().includes(s) ||
         p.inventory_id.toLowerCase().includes(s) ||
@@ -49,7 +51,7 @@ export default function Inventory() {
         <div className="flex gap-2">
           {canEdit && (
             <Button size="sm" onClick={() => setAddOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" /> Add Piano
+              <Plus className="h-4 w-4 mr-1.5" /> Add Workshop Item
             </Button>
           )}
         </div>
@@ -102,7 +104,7 @@ export default function Inventory() {
                   <span className={`status-badge ${STATUS_COLORS[piano.status as PianoStatus] || ''}`}>{STATUS_LABELS[piano.status as PianoStatus] || piano.status}</span>
                   <span className={`status-badge ${OWNERSHIP_COLORS[piano.ownership_category as OwnershipCategory] || ''}`}>{OWNERSHIP_LABELS[piano.ownership_category as OwnershipCategory] || piano.ownership_category}</span>
                 </div>
-                <p className="font-semibold">{piano.brand} {piano.model}</p>
+                <p className="font-semibold">{itemDisplayName(piano as any)}</p>
                 <p className="text-sm text-muted-foreground">SN: {piano.serial_number || '—'} · {PIANO_TYPE_LABELS[piano.piano_type as PianoType] || piano.piano_type} · {piano.tag}</p>
               </div>
               <div className="flex items-center gap-6 text-sm sm:flex-shrink-0">

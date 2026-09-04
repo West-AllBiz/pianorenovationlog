@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { usePiano, usePianoRelated, useUpdatePiano, useLogActivity } from '@/hooks/usePianos';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,6 +22,7 @@ import {
   type PianoStatus, type OwnershipCategory, type ColorTag, type RoiHealth, type PianoType,
   type ConditionScore, type TaskCategory,
 } from '@/types/piano';
+import { isPianoLike, itemKindLabel, itemDisplayName } from '@/types/itemKind';
 
 import CatalogueTab from '@/components/CatalogueTab';
 import { LaborSummary } from '@/components/LaborSummary';
@@ -280,10 +282,14 @@ export default function PianoDetail() {
               {piano.color_tag && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLOR_TAG_HEX[piano.color_tag as ColorTag] || '#94a3b8' }} />}
               <span className="text-sm font-mono text-muted-foreground">{piano.inventory_id}</span>
             </div>
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold">{piano.brand} {piano.model}</h1>
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold">{itemDisplayName(piano as any)}</h1>
             <p className="text-muted-foreground font-mono text-sm">
-              {piano.inventory_id} · {PIANO_TYPE_LABELS[piano.piano_type as PianoType] || piano.piano_type} · #{piano.serial_number || '—'}
+              {piano.inventory_id} · {isPianoLike((piano as any).item_kind)
+                ? (PIANO_TYPE_LABELS[piano.piano_type as PianoType] || piano.piano_type)
+                : itemKindLabel((piano as any).item_kind)}
+              {piano.serial_number ? ` · #${piano.serial_number}` : ''}
             </p>
+
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {canEdit ? (
@@ -485,7 +491,7 @@ export default function PianoDetail() {
         )}
 
         {activeTab === 'Expenses' && (
-          <ExpensesContent pianoId={piano.id} expenses={expenses} clientRecord={clientRecord} donationRecord={donationRecord} canEdit={canEdit} />
+          <ExpensesContent pianoId={piano.id} itemKind={(piano as any).item_kind} expenses={expenses} clientRecord={clientRecord} donationRecord={donationRecord} canEdit={canEdit} />
         )}
 
         {activeTab === 'Character Notes' && (
@@ -937,8 +943,126 @@ function RestorationContent({ pianoId, tasks, performanceProfile, canEdit: edita
 }
 
 // ── Expenses Content (auto-save on blur) ─────────────────
-function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canEdit: editable }: {
-  pianoId: string; expenses: any; clientRecord: any; donationRecord: any; canEdit: boolean;
+function ClientJobDetails({ clientRecord, itemKind, canEdit: editable }: {
+  clientRecord: any; itemKind: string | null | undefined; canEdit: boolean;
+}) {
+  const qc = useQueryClient();
+  const { user, profile } = useAuth();
+  const pianoLike = isPianoLike(itemKind);
+  const kind = itemKindLabel(itemKind);
+
+  const save = async (field: string, value: any) => {
+    const { error } = await supabase.from('client_records').update({ [field]: value } as any).eq('id', clientRecord.id);
+    if (error) { toast({ title: 'Error', description: 'Failed to save', variant: 'destructive' }); return; }
+    if (user) {
+      await supabase.from('activity_log').insert({
+        piano_id: clientRecord.piano_id, user_id: user.id, user_name: profile?.full_name || '',
+        action_description: `Updated client job: ${field.replace(/_/g, ' ')}`,
+        changed_field: field,
+        new_value: String(value ?? ''),
+      });
+    }
+    qc.invalidateQueries({ queryKey: ['client_record', clientRecord.piano_id] });
+    qc.invalidateQueries({ queryKey: ['activity_log', clientRecord.piano_id] });
+    toast({ title: 'Saved' });
+  };
+
+  const num = (v: string) => (v.trim() === '' ? null : parseFloat(v) || 0);
+
+  const textFields: [string, string, string][] = [
+    ['Client Name', 'client_name', 'text'],
+    ['Client Contact', 'client_contact', 'text'],
+  ];
+  const moneyFields: [string, string][] = [
+    ['Estimate ($)', 'estimate'],
+    ['Deposit Received ($)', 'deposit_received'],
+    ['Invoice Total ($)', 'invoice_total'],
+    ['Balance Due ($)', 'balance_due'],
+  ];
+  const dateFields: [string, string][] = [
+    ['Target Return Date', 'target_return_date'],
+    [pianoLike ? 'Pickup Date' : 'Collection Date', 'pickup_date'],
+  ];
+
+  return (
+    <Section title={pianoLike ? 'Client Job Details' : `Client ${kind} — Job Details`}>
+      {!editable ? (
+        <div className="grid sm:grid-cols-2 gap-x-6">
+          {[
+            ['Client Name', clientRecord.client_name],
+            ['Client Contact', clientRecord.client_contact || '—'],
+            ['Estimate', clientRecord.estimate ? `$${clientRecord.estimate}` : '—'],
+            ['Deposit', `$${clientRecord.deposit_received || 0}`],
+            ['Work Authorized', clientRecord.work_authorized ? 'Yes' : 'No'],
+            ['Labor Hours', `${clientRecord.labor_hours || 0}h`],
+            ['Invoice Total', clientRecord.invoice_total ? `$${clientRecord.invoice_total}` : 'Pending'],
+            ['Balance Due', `$${clientRecord.balance_due || 0}`],
+            ['Target Return Date', clientRecord.target_return_date || 'TBD'],
+            [pianoLike ? 'Pickup Date' : 'Collection Date', clientRecord.pickup_date || 'TBD'],
+            [pianoLike ? 'Work Description' : `Work Requested on ${kind}`, clientRecord.work_description || '—'],
+          ].map(([k, v]) => (
+            <ReadonlyDetailRow key={k as string} label={k as string} value={v as string} />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="grid sm:grid-cols-2 gap-4">
+            {textFields.map(([label, field]) => (
+              <div key={field} className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{label}</Label>
+                <Input
+                  defaultValue={clientRecord[field] || ''}
+                  onBlur={e => { if (e.target.value !== (clientRecord[field] || '')) save(field, e.target.value); }}
+                />
+              </div>
+            ))}
+            {moneyFields.map(([label, field]) => (
+              <div key={field} className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{label}</Label>
+                <Input
+                  type="number"
+                  defaultValue={clientRecord[field] ?? ''}
+                  onBlur={e => { if (e.target.value !== String(clientRecord[field] ?? '')) save(field, num(e.target.value)); }}
+                />
+              </div>
+            ))}
+            {dateFields.map(([label, field]) => (
+              <div key={field} className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">{label}</Label>
+                <Input
+                  type="date"
+                  defaultValue={clientRecord[field] || ''}
+                  onBlur={e => { if (e.target.value !== (clientRecord[field] || '')) save(field, e.target.value || null); }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">{pianoLike ? 'Work Description' : `Work Requested on ${kind}`}</Label>
+            <Textarea
+              defaultValue={clientRecord.work_description || ''}
+              rows={3}
+              onBlur={e => { if (e.target.value !== (clientRecord.work_description || '')) save('work_description', e.target.value); }}
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={!!clientRecord.work_authorized}
+              onCheckedChange={v => save('work_authorized', v)}
+            />
+            <Label>Work Authorized</Label>
+          </div>
+          <ReadonlyDetailRow label="Labor Hours" value={`${clientRecord.labor_hours || 0}h`} />
+          <p className="text-xs text-muted-foreground">Auto-saves when you click away</p>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+// ── Expenses Content (auto-save on blur) ─────────────────
+function ExpensesContent({ pianoId, itemKind, expenses, clientRecord, donationRecord, canEdit: editable }: {
+  pianoId: string; itemKind?: string | null; expenses: any; clientRecord: any; donationRecord: any; canEdit: boolean;
 }) {
   const qc = useQueryClient();
   const { user, profile } = useAuth();
@@ -967,25 +1091,9 @@ function ExpensesContent({ pianoId, expenses, clientRecord, donationRecord, canE
   };
 
   if (clientRecord) {
-    return (
-      <Section title="Client Job Details">
-        <div className="grid sm:grid-cols-2 gap-x-6">
-          {[
-            ['Client Name', clientRecord.client_name],
-            ['Estimate', clientRecord.estimate ? `$${clientRecord.estimate}` : '—'],
-            ['Deposit', `$${clientRecord.deposit_received || 0}`],
-            ['Work Authorized', clientRecord.work_authorized ? 'Yes' : 'No'],
-            ['Labor Hours', `${clientRecord.labor_hours || 0}h`],
-            ['Invoice Total', clientRecord.invoice_total ? `$${clientRecord.invoice_total}` : 'Pending'],
-            ['Balance Due', `$${clientRecord.balance_due || 0}`],
-            ['Pickup Date', clientRecord.pickup_date || 'TBD'],
-          ].map(([k, v]) => (
-            <ReadonlyDetailRow key={k as string} label={k as string} value={v as string} />
-          ))}
-        </div>
-      </Section>
-    );
+    return <ClientJobDetails clientRecord={clientRecord} itemKind={itemKind} canEdit={editable} />;
   }
+
 
   if (donationRecord) {
     return (
