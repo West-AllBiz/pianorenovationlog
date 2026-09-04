@@ -361,6 +361,36 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
                   <Label>Client Contact</Label>
                   <Input value={form.client_contact} onChange={e => set('client_contact', e.target.value)} />
                 </div>
+                <div className="space-y-2">
+                  <Label>{isPiano ? 'Work Description' : `Work Requested on ${kindLabel}`}</Label>
+                  <Textarea value={form.work_description} onChange={e => set('work_description', e.target.value)} rows={3} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Estimate ($)</Label>
+                    <Input type="number" value={form.estimate} onChange={e => set('estimate', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Deposit Received ($)</Label>
+                    <Input type="number" value={form.deposit_received} onChange={e => set('deposit_received', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Invoice Total ($)</Label>
+                    <Input type="number" value={form.invoice_total} onChange={e => set('invoice_total', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Balance Due ($)</Label>
+                    <Input type="number" value={form.balance_due} onChange={e => set('balance_due', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Target Return Date</Label>
+                    <Input type="date" value={form.target_return_date} onChange={e => set('target_return_date', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{isPiano ? 'Pickup Date' : 'Collection Date'}</Label>
+                    <Input type="date" value={form.client_pickup_date} onChange={e => set('client_pickup_date', e.target.value)} />
+                  </div>
+                </div>
                 <div className="flex items-center gap-3">
                   <Switch checked={form.work_authorized} onCheckedChange={v => set('work_authorized', v)} />
                   <Label>Work Authorized</Label>
@@ -369,6 +399,7 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
             )}
 
             {isDonation && (
+
               <>
                 <div className="space-y-2">
                   <Label>Donation Recipient</Label>
