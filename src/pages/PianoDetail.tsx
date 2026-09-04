@@ -280,10 +280,14 @@ export default function PianoDetail() {
               {piano.color_tag && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLOR_TAG_HEX[piano.color_tag as ColorTag] || '#94a3b8' }} />}
               <span className="text-sm font-mono text-muted-foreground">{piano.inventory_id}</span>
             </div>
-            <h1 className="font-heading text-2xl sm:text-3xl font-bold">{piano.brand} {piano.model}</h1>
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold">{itemDisplayName(piano as any)}</h1>
             <p className="text-muted-foreground font-mono text-sm">
-              {piano.inventory_id} · {PIANO_TYPE_LABELS[piano.piano_type as PianoType] || piano.piano_type} · #{piano.serial_number || '—'}
+              {piano.inventory_id} · {isPianoLike((piano as any).item_kind)
+                ? (PIANO_TYPE_LABELS[piano.piano_type as PianoType] || piano.piano_type)
+                : itemKindLabel((piano as any).item_kind)}
+              {piano.serial_number ? ` · #${piano.serial_number}` : ''}
             </p>
+
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {canEdit ? (
