@@ -179,16 +179,16 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         piano_id: piano.id,
         user_id: user.id,
         user_name: profile?.full_name || user.email || 'Unknown',
-        action_description: `Piano added by ${profile?.full_name || 'user'}`,
+        action_description: `${kindLabel} added by ${profile?.full_name || 'user'}`,
       });
 
       qc.invalidateQueries({ queryKey: ['pianos'] });
-      toast({ title: 'Piano added', description: `${form.brand} (${inventoryId}) has been added to inventory.` });
+      toast({ title: `${kindLabel} added`, description: `${isPiano ? form.brand : form.item_name} (${inventoryId}) has been added to inventory.` });
       onOpenChange(false);
       setStep(0);
       navigate(`/piano/${piano.id}`);
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Failed to save piano', variant: 'destructive' });
+      toast({ title: 'Error', description: err.message || 'Failed to save item', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -483,8 +483,8 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
         {currentStepName === 'Review' && (
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              <div className="text-muted-foreground">Brand</div><div className="font-medium">{form.brand}</div>
-              <div className="text-muted-foreground">Type</div><div className="font-medium capitalize">{form.piano_type.replace(/_/g, ' ')}</div>
+              <div className="text-muted-foreground">Item</div><div className="font-medium">{isPiano ? `${form.brand} ${form.model}`.trim() : form.item_name}</div>
+              <div className="text-muted-foreground">Type</div><div className="font-medium capitalize">{isPiano ? form.piano_type.replace(/_/g, ' ') : kindLabel}</div>
               <div className="text-muted-foreground">Serial</div><div className="font-medium">{form.serial_number || '—'}</div>
               <div className="text-muted-foreground">Ownership</div><div className="font-medium capitalize">{form.ownership_category.replace(/_/g, ' ')}</div>
               <div className="text-muted-foreground">Source</div><div className="font-medium capitalize">{form.source.replace(/_/g, ' ')}</div>
@@ -504,7 +504,7 @@ export function AddPianoDialog({ open, onOpenChange }: AddPianoDialogProps) {
           {step < totalSteps - 1 ? (
             <Button onClick={() => setStep(step + 1)} disabled={!canProceed()}>Next</Button>
           ) : (
-            <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Piano'}</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : `Save ${kindLabel}`}</Button>
           )}
         </div>
       </DialogContent>

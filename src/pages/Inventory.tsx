@@ -49,7 +49,7 @@ export default function Inventory() {
         <div className="flex gap-2">
           {canEdit && (
             <Button size="sm" onClick={() => setAddOpen(true)}>
-              <Plus className="h-4 w-4 mr-1.5" /> Add Piano
+              <Plus className="h-4 w-4 mr-1.5" /> Add Workshop Item
             </Button>
           )}
         </div>

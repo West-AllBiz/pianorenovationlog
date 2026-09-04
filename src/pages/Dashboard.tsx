@@ -58,7 +58,7 @@ export default function Dashboard() {
         </div>
         {canEdit && (
           <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus className="h-4 w-4 mr-1.5" /> Add Piano
+            <Plus className="h-4 w-4 mr-1.5" /> Add Workshop Item
           </Button>
         )}
       </motion.div>
