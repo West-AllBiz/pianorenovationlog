@@ -248,12 +248,12 @@ async function findPianoByInventoryId(inventoryId: string) {
   return rows?.[0] ?? null;
 }
 
+// Detail/photos access: an explicit visible catalogue row is sufficient,
+// even for client-owned / not_for_sale items (share-link support).
+// The LIST endpoint remains restricted to publicly listable sale types.
 async function handleDetail(inventoryId: string, origin: string | null) {
   const piano = await findPianoByInventoryId(inventoryId);
   if (!piano) return errorResponse("not_found", "Piano not found", 404, origin);
-  if (!isPubliclyListable(piano)) {
-    return errorResponse("not_found", "Piano not found", 404, origin);
-  }
 
   const catRows = await dbGet(
     "catalogue",
@@ -272,9 +272,6 @@ async function handleDetail(inventoryId: string, origin: string | null) {
 async function handlePhotos(inventoryId: string, origin: string | null) {
   const piano = await findPianoByInventoryId(inventoryId);
   if (!piano) return errorResponse("not_found", "Piano not found", 404, origin);
-  if (!isPubliclyListable(piano)) {
-    return errorResponse("not_found", "Piano not found", 404, origin);
-  }
 
   const catRows = await dbGet(
     "catalogue",
