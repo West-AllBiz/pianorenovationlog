@@ -218,6 +218,13 @@ export default function CatalogueDetail() {
             </div>
           )}
 
+          {/* Public build milestones — renders independently of labor/cost visibility */}
+          <BuildMilestones
+            tasks={(listing.tasks || []).filter((t: any) => (t.notes || '').trim() === 'Public build milestone')}
+            percentComplete={p?.percent_complete}
+          />
+
+
           {/* Restoration Record (public-facing) */}
           <RestorationRecord
             tasks={listing.tasks || []}
