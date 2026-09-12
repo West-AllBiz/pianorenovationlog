@@ -11,8 +11,20 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   coming_soon: { label: 'COMING SOON', color: 'bg-primary/15 text-primary' },
   in_progress: { label: 'BEING RESTORED', color: 'bg-teal/15 text-teal' },
   reserved: { label: 'RESERVED', color: 'bg-[#a78bfa]/15 text-[#a78bfa]' },
+  completed: { label: 'COMPLETED', color: 'bg-primary/10 text-primary' },
   sold: { label: 'SOLD', color: 'bg-muted text-muted-foreground' },
 };
+
+// Active work first, then available inventory, then the completed/sold archive.
+const STATUS_RANK: Record<string, number> = {
+  in_progress: 0,
+  available: 1,
+  coming_soon: 2,
+  reserved: 3,
+  completed: 4,
+  sold: 5,
+};
+const rank = (status: string) => STATUS_RANK[status] ?? 3;
 
 type FilterKey = 'all' | 'available' | 'coming_soon' | 'custom' | 'antique';
 
