@@ -127,7 +127,10 @@ function shapeListItem(piano: any, cat: any, heroUrl: string | null) {
     finish: piano.finish ?? "",
     piano_type: piano.piano_type,
     status: piano.status,
+    catalogue_status: cat?.status ?? "",
+    percent_complete: piano.percent_complete ?? null,
     asking_price: piano.asking_price ?? null,
+    sold_price: piano.sold_price ?? null,
     price_display: cat?.price_display ?? "",
     hero_photo_url: heroUrl,
     public_description: cat?.public_description ?? "",
@@ -160,7 +163,7 @@ async function shapeDetail(piano: any, cat: any, photos: any[]) {
   // Tasks + labor hours
   const tasks: any[] = await dbGet(
     "restoration_tasks",
-    `piano_id=eq.${piano.id}&select=id,title,category,status,labor_hours,completion_date&order=category.asc`,
+    `piano_id=eq.${piano.id}&select=id,title,category,status,labor_hours,completion_date,notes&order=category.asc`,
   );
   const completed = tasks.filter((t) => t.status === "done");
   const totalHours = completed.reduce((sum, t) => sum + (Number(t.labor_hours) || 0), 0);
@@ -176,6 +179,20 @@ async function shapeDetail(piano: any, cat: any, photos: any[]) {
       completion_date: t.completion_date,
     }));
   }
+
+  // Explicitly published build milestones only — never private task notes.
+  detail.public_tasks = tasks
+    .filter(
+      (t) =>
+        (t.notes ?? "").trim() === "Public build milestone" &&
+        ["done", "in_progress", "todo"].includes(t.status),
+    )
+    .map((t) => ({
+      title: t.title,
+      category: t.category,
+      status: t.status,
+      completion_date: t.completion_date ?? null,
+    }));
 
   if (cat?.show_cost_breakdown) {
     const expenses = await dbGet(
