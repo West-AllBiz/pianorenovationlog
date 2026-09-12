@@ -53,7 +53,7 @@ export default function Catalogue() {
       if (pianoIds.length === 0) return [];
 
       const [pianos, photos, charNotes, tasks] = await Promise.all([
-        supabase.from('pianos').select('id, brand, model, piano_type, year_built, country_of_origin, finish_plan, selling_channel, inventory_id, ownership_category, sale_type').in('id', pianoIds),
+        supabase.from('pianos').select('id, brand, model, piano_type, year_built, country_of_origin, finish_plan, selling_channel, inventory_id, ownership_category, sale_type, percent_complete, sold_price').in('id', pianoIds),
         supabase.from('piano_photos').select('piano_id, url, is_primary, sort_order, category').in('piano_id', pianoIds),
         supabase.from('character_notes').select('piano_id, tonal_character, action_feel, musical_suitability, cabinet_character').in('piano_id', pianoIds),
         supabase.from('restoration_tasks').select('piano_id, status, labor_hours').in('piano_id', pianoIds),
