@@ -224,15 +224,8 @@ async function shapeDetail(piano: any, cat: any, photos: any[]) {
 
 // ---------- Handlers ----------
 
-// Single source of truth for public sale visibility:
-//   sale_type IN ('internal_inventory', 'consignment')
-// ownership_category is informational only and never blocks public listing.
-function isPubliclyListable(piano: any): boolean {
-  if (!piano) return false;
-  const saleType = piano.sale_type ?? "internal_inventory";
-  return saleType === "internal_inventory" || saleType === "consignment";
-}
-
+// Public visibility is controlled solely by catalogue.visible.
+// sale_type / is_consignment are returned so consumers can group safely.
 async function handleList(origin: string | null) {
   const visibleCat: any[] = await dbGet(
     "catalogue",
@@ -242,11 +235,10 @@ async function handleList(origin: string | null) {
 
   const pianoIds = visibleCat.map((c) => c.piano_id);
   const inList = pianoIds.map((id) => `"${id}"`).join(",");
-  const allPianos: any[] = await dbGet(
+  const pianos: any[] = await dbGet(
     "pianos",
-    `id=in.(${inList})&select=id,inventory_id,brand,model,year_built,finish,piano_type,status,asking_price,country_of_origin,bench_included,ownership_category,sale_type&order=inventory_id.asc`,
+    `id=in.(${inList})&select=id,inventory_id,brand,model,year_built,finish,piano_type,status,percent_complete,asking_price,sold_price,country_of_origin,bench_included,ownership_category,sale_type&order=inventory_id.asc`,
   );
-  const pianos = allPianos.filter(isPubliclyListable);
 
   const photoMap = await getPhotosForPianoIds(pianos.map((p) => p.id));
   const catByPiano = new Map(visibleCat.map((c) => [c.piano_id, c]));
