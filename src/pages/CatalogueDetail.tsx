@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import RestorationRecord from '@/components/public/RestorationRecord';
+import BuildMilestones from '@/components/public/BuildMilestones';
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   available: { label: 'AVAILABLE', color: 'bg-[#4ade80]/15 text-[#4ade80]' },
   coming_soon: { label: 'COMING SOON', color: 'bg-primary/15 text-primary' },
   in_progress: { label: 'BEING RESTORED', color: 'bg-teal/15 text-teal' },
   reserved: { label: 'RESERVED', color: 'bg-[#a78bfa]/15 text-[#a78bfa]' },
+  completed: { label: 'COMPLETED', color: 'bg-primary/10 text-primary' },
   sold: { label: 'SOLD', color: 'bg-muted text-muted-foreground' },
 };
 
@@ -38,7 +40,7 @@ export default function CatalogueDetail() {
         supabase.from('pianos').select('*').eq('id', id!).single(),
         supabase.from('piano_photos').select('*').eq('piano_id', id!).order('sort_order'),
         supabase.from('character_notes').select('*').eq('piano_id', id!).maybeSingle(),
-        supabase.from('restoration_tasks').select('id, title, category, status, labor_hours').eq('piano_id', id!),
+        supabase.from('restoration_tasks').select('id, title, category, status, labor_hours, completion_date, notes').eq('piano_id', id!),
         supabase.from('expenses').select('parts_cost, moving_cost, marketing_cost').eq('piano_id', id!).maybeSingle(),
         supabase.from('app_settings').select('value').eq('key', 'technician_hourly_rate').maybeSingle(),
       ]);
@@ -215,6 +217,13 @@ export default function CatalogueDetail() {
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{listing.public_restoration_note}</p>
             </div>
           )}
+
+          {/* Public build milestones — renders independently of labor/cost visibility */}
+          <BuildMilestones
+            tasks={(listing.tasks || []).filter((t: any) => (t.notes || '').trim() === 'Public build milestone')}
+            percentComplete={p?.percent_complete}
+          />
+
 
           {/* Restoration Record (public-facing) */}
           <RestorationRecord

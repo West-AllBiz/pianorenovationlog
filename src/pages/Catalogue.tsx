@@ -11,8 +11,20 @@ const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   coming_soon: { label: 'COMING SOON', color: 'bg-primary/15 text-primary' },
   in_progress: { label: 'BEING RESTORED', color: 'bg-teal/15 text-teal' },
   reserved: { label: 'RESERVED', color: 'bg-[#a78bfa]/15 text-[#a78bfa]' },
+  completed: { label: 'COMPLETED', color: 'bg-primary/10 text-primary' },
   sold: { label: 'SOLD', color: 'bg-muted text-muted-foreground' },
 };
+
+// Active work first, then available inventory, then the completed/sold archive.
+const STATUS_RANK: Record<string, number> = {
+  in_progress: 0,
+  available: 1,
+  coming_soon: 2,
+  reserved: 3,
+  completed: 4,
+  sold: 5,
+};
+const rank = (status: string) => STATUS_RANK[status] ?? 3;
 
 type FilterKey = 'all' | 'available' | 'coming_soon' | 'custom' | 'antique';
 
@@ -41,7 +53,7 @@ export default function Catalogue() {
       if (pianoIds.length === 0) return [];
 
       const [pianos, photos, charNotes, tasks] = await Promise.all([
-        supabase.from('pianos').select('id, brand, model, piano_type, year_built, country_of_origin, finish_plan, selling_channel, inventory_id, ownership_category, sale_type').in('id', pianoIds),
+        supabase.from('pianos').select('id, brand, model, piano_type, year_built, country_of_origin, finish_plan, selling_channel, inventory_id, ownership_category, sale_type, percent_complete, sold_price').in('id', pianoIds),
         supabase.from('piano_photos').select('piano_id, url, is_primary, sort_order, category').in('piano_id', pianoIds),
         supabase.from('character_notes').select('piano_id, tonal_character, action_feel, musical_suitability, cabinet_character').in('piano_id', pianoIds),
         supabase.from('restoration_tasks').select('piano_id, status, labor_hours').in('piano_id', pianoIds),
@@ -82,7 +94,8 @@ export default function Catalogue() {
       return y < 1960;
     }
     return true;
-  });
+  }).sort((a: any, b: any) => rank(a.status) - rank(b.status));
+
 
   const getPrimaryPhoto = (listing: any) => {
     const primary = listing.photos?.find((p: any) => p.is_primary);
@@ -191,6 +204,14 @@ export default function Catalogue() {
                         <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground/70 mb-3">
                           Available on Consignment
                         </p>
+                      )}
+                      {listing.status === 'in_progress' && typeof p?.percent_complete === 'number' && (
+                        <div className="mb-3">
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full bg-teal" style={{ width: `${Math.max(0, Math.min(100, p.percent_complete))}%` }} />
+                          </div>
+                          <p className="font-mono text-[10px] text-muted-foreground mt-1">{p.percent_complete}% complete</p>
+                        </div>
                       )}
 
                       {/* Highlights */}
