@@ -205,6 +205,14 @@ export default function Catalogue() {
                           Available on Consignment
                         </p>
                       )}
+                      {listing.status === 'in_progress' && typeof p?.percent_complete === 'number' && (
+                        <div className="mb-3">
+                          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div className="h-full bg-teal" style={{ width: `${Math.max(0, Math.min(100, p.percent_complete))}%` }} />
+                          </div>
+                          <p className="font-mono text-[10px] text-muted-foreground mt-1">{p.percent_complete}% complete</p>
+                        </div>
+                      )}
 
                       {/* Highlights */}
                       {listing.highlights && listing.highlights.length > 0 && (
