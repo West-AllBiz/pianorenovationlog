@@ -94,7 +94,8 @@ export default function Catalogue() {
       return y < 1960;
     }
     return true;
-  });
+  }).sort((a: any, b: any) => rank(a.status) - rank(b.status));
+
 
   const getPrimaryPhoto = (listing: any) => {
     const primary = listing.photos?.find((p: any) => p.is_primary);
