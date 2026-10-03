@@ -319,7 +319,62 @@ const CATALOGUE_WRITABLE = new Set([
   "display_priority",
   "featured",
 ]);
-__KEEP__
+
+async function handleAdminPatch(inventoryId: string, req: Request, origin: string | null) {
+  const auth = req.headers.get("Authorization") ?? "";
+  if (!WRITE_KEY || !auth.startsWith("Bearer ") || auth.slice(7) !== WRITE_KEY) {
+    return errorResponse("unauthorized", "Invalid or missing API key", 401, origin);
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return errorResponse("bad_request", "Invalid JSON body", 400, origin);
+  }
+  if (!body || typeof body !== "object") {
+    return errorResponse("bad_request", "Body must be a JSON object", 400, origin);
+  }
+
+  const piano = await findPianoByInventoryId(inventoryId);
+  if (!piano) return errorResponse("not_found", "Piano not found", 404, origin);
+
+  const pianoUpdates: Record<string, unknown> = {};
+  const catalogueUpdates: Record<string, unknown> = {};
+  const ignored: string[] = [];
+
+  for (const [k, v] of Object.entries(body)) {
+    if (PIANO_WRITABLE.has(k)) pianoUpdates[k] = v;
+    else if (CATALOGUE_WRITABLE.has(k)) catalogueUpdates[k] = v;
+    else ignored.push(k);
+  }
+
+  if (!Object.keys(pianoUpdates).length && !Object.keys(catalogueUpdates).length) {
+    return errorResponse(
+      "bad_request",
+      `No writable fields supplied. Allowed: ${[...PIANO_WRITABLE, ...CATALOGUE_WRITABLE].join(", ")}`,
+      400,
+      origin,
+    );
+  }
+
+  // Type coercion / light validation
+  if ("asking_price" in pianoUpdates) {
+    const v = pianoUpdates.asking_price;
+    if (v !== null && typeof v !== "number") {
+      return errorResponse("bad_request", "asking_price must be a number or null", 400, origin);
+    }
+  }
+  for (const k of ["visible", "show_labor_hours", "show_task_list", "show_cost_breakdown", "show_restoration_notes", "featured"]) {
+    if (k in catalogueUpdates && typeof catalogueUpdates[k] !== "boolean") {
+      return errorResponse("bad_request", `${k} must be boolean`, 400, origin);
+    }
+  }
+  if ("display_priority" in catalogueUpdates && !Number.isInteger(catalogueUpdates.display_priority)) {
+    return errorResponse("bad_request", "display_priority must be an integer", 400, origin);
+  }
+  if ("highlights" in catalogueUpdates && !Array.isArray(catalogueUpdates.highlights)) {
+    return errorResponse("bad_request", "highlights must be an array of strings", 400, origin);
   }
 
   const changedFields: string[] = [];
