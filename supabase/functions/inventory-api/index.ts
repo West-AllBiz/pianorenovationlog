@@ -136,6 +136,8 @@ function shapeListItem(piano: any, cat: any, heroUrl: string | null) {
     public_description: cat?.public_description ?? "",
     highlights: cat?.highlights ?? [],
     visible: !!cat?.visible,
+    display_priority: cat?.display_priority ?? 100,
+    featured: !!cat?.featured,
     sale_type: saleType,
     is_consignment: saleType === "consignment",
   };
@@ -314,6 +316,8 @@ const CATALOGUE_WRITABLE = new Set([
   "show_task_list",
   "show_cost_breakdown",
   "show_restoration_notes",
+  "display_priority",
+  "featured",
 ]);
 
 async function handleAdminPatch(inventoryId: string, req: Request, origin: string | null) {
@@ -361,10 +365,13 @@ async function handleAdminPatch(inventoryId: string, req: Request, origin: strin
       return errorResponse("bad_request", "asking_price must be a number or null", 400, origin);
     }
   }
-  for (const k of ["visible", "show_labor_hours", "show_task_list", "show_cost_breakdown", "show_restoration_notes"]) {
+  for (const k of ["visible", "show_labor_hours", "show_task_list", "show_cost_breakdown", "show_restoration_notes", "featured"]) {
     if (k in catalogueUpdates && typeof catalogueUpdates[k] !== "boolean") {
       return errorResponse("bad_request", `${k} must be boolean`, 400, origin);
     }
+  }
+  if ("display_priority" in catalogueUpdates && !Number.isInteger(catalogueUpdates.display_priority)) {
+    return errorResponse("bad_request", "display_priority must be an integer", 400, origin);
   }
   if ("highlights" in catalogueUpdates && !Array.isArray(catalogueUpdates.highlights)) {
     return errorResponse("bad_request", "highlights must be an array of strings", 400, origin);
