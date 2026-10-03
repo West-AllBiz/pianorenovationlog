@@ -46,6 +46,8 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
   const [showLaborHours, setShowLaborHours] = useState(true);
   const [showTaskList, setShowTaskList] = useState(false);
   const [showCostBreakdown, setShowCostBreakdown] = useState(false);
+  const [featured, setFeatured] = useState(false);
+  const [displayPriority, setDisplayPriority] = useState('100');
   const catalogueIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -61,6 +63,8 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
       setShowLaborHours((catalogue as any).show_labor_hours ?? true);
       setShowTaskList((catalogue as any).show_task_list ?? false);
       setShowCostBreakdown((catalogue as any).show_cost_breakdown ?? false);
+      setFeatured((catalogue as any).featured ?? false);
+      setDisplayPriority(String((catalogue as any).display_priority ?? 100));
       catalogueIdRef.current = catalogue.id;
     } else if (!isLoading) {
       if (estimatedSalePrice) {
@@ -117,6 +121,30 @@ export default function CatalogueTab({ pianoId, inventoryId, estimatedSalePrice,
           <Label className="text-sm">Show in public catalogue</Label>
           <Switch checked={visible} onCheckedChange={handleVisibleChange} disabled={!canEdit} />
         </div>
+
+        <div className="flex items-center justify-between mb-4">
+          <Label className="text-sm">Featured on website</Label>
+          <Switch checked={featured} onCheckedChange={(v) => { setFeatured(v); autoSave({ featured: v }); }} disabled={!canEdit} />
+        </div>
+
+        <div className="flex items-center justify-between mb-4 gap-4">
+          <Label className="text-sm">Display priority <span className="text-xs text-muted-foreground">(lower shows first)</span></Label>
+          <Input
+            type="number"
+            step={1}
+            className="w-24 font-mono"
+            value={displayPriority}
+            onChange={(e) => setDisplayPriority(e.target.value)}
+            onBlur={() => {
+              const n = parseInt(displayPriority, 10);
+              if (!Number.isInteger(n)) { setDisplayPriority(String((catalogue as any)?.display_priority ?? 100)); return; }
+              setDisplayPriority(String(n));
+              autoSave({ display_priority: n });
+            }}
+            disabled={!canEdit}
+          />
+        </div>
+
 
         <div>
           <Label className="text-sm mb-2 block">Availability Status</Label>
