@@ -7,7 +7,7 @@ The live source is still bxurezzzvdnuiiwtaqxw. No domain, credentials or product
 - Five Auth account identifiers and profile metadata. Password hashes and provider tokens are excluded.
 - Current table definitions, enums, constraints, indexes, functions, triggers, policies and grants.
 - All 62 storage objects (193,511,763 bytes). Sizes match source metadata; all 59 available source MD5 checksums match.
-- All 61 populated photo URLs resolve to objects in that backup. Ten photo rows have no populated URL and need a storage_path review before switching.
+- All 61 populated photo URLs resolve to objects in that backup. Ten other photo rows embed their image data in the exported URL field.
 - Private exports and photos are kept outside GitHub.
 
 ## Owned destination
