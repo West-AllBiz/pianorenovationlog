@@ -27,17 +27,84 @@ type PianoPhoto = {
   category: PhotoCategory;
 };
 
+
+// Optimize phone photos in the browser before sending them over the network.
+// Original photos already in storage are never changed.
+const MAX_PHOTO_SIDE = 2200;
+const STORAGE_LIMIT_BYTES = 10 * 1024 * 1024;
+
+type UploadImage = { blob: Blob; extension: string; contentType: string };
+
+async function preparePhoto(file: File): Promise<UploadImage> {
+  const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const mime = file.type || ({
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+    webp: 'image/webp', heic: 'image/heic', heif: 'image/heif',
+  } as Record<string, string>)[extension] || '';
+
+  if (file.size === 0) throw new Error('This image is empty.');
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'].includes(mime)) {
+    throw new Error('Please select a JPG, PNG, WebP, or HEIC photo.');
+  }
+
+  const original = { blob: file as Blob, extension, contentType: mime };
+  if (file.size <= 1_200_000 && mime !== 'image/heic' && mime !== 'image/heif') return original;
+
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    if (mime === 'image/heic' || mime === 'image/heif') {
+      throw new Error('This device cannot convert HEIC. Export the photo as JPG and retry.');
+    }
+    if (file.size > STORAGE_LIMIT_BYTES) {
+      throw new Error('Image is over 10 MB and could not be compressed.');
+    }
+    return original;
+  }
+
+  try {
+    const scale = Math.min(1, MAX_PHOTO_SIDE / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Image processing is unavailable in this browser.');
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    const compressed = await new Promise<Blob | null>(resolve => {
+      canvas.toBlob(resolve, 'image/webp', 0.83);
+    });
+    canvas.width = 0;
+    canvas.height = 0;
+
+    if (compressed?.type === 'image/webp' && (compressed.size < file.size || mime === 'image/heic' || mime === 'image/heif')) {
+      return { blob: compressed, extension: 'webp', contentType: 'image/webp' };
+    }
+    if (mime === 'image/heic' || mime === 'image/heif') {
+      throw new Error('HEIC conversion is not supported here. Export as JPG and retry.');
+    }
+    if (file.size > STORAGE_LIMIT_BYTES) {
+      throw new Error('Image exceeds 10 MB even after processing.');
+    }
+    return original;
+  } finally {
+    bitmap.close();
+  }
+}
+
 export function usePianoPhotos(pianoId: string | undefined) {
   return useQuery({
     queryKey: ['piano_photos', pianoId],
     enabled: !!pianoId,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('piano_photos')
         .select('*')
         .eq('piano_id', pianoId!)
         .order('is_primary', { ascending: false })
         .order('sort_order', { ascending: true });
+      if (error) throw error;
       return (data ?? []) as PianoPhoto[];
     },
   });
@@ -66,52 +133,117 @@ export function PianoPhotosBanner({ pianoId }: { pianoId: string }) {
 }
 
 export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
-  const { data: photos = [], isLoading } = usePianoPhotos(pianoId);
+  const { data: photos = [], isLoading, isError } = usePianoPhotos(pianoId);
   const { canEdit, user } = useAuth();
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ completed: number; total: number } | null>(null);
+  const uploadCategoryRef = useRef<PhotoCategory>('acquired');
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<PhotoCategory>('acquired');
-  const [uploadCategory, setUploadCategory] = useState<PhotoCategory>('acquired');
 
   const categoryPhotos = photos.filter(p => (p.category || 'acquired') === activeTab);
   const primary = categoryPhotos.find(p => p.is_primary) || categoryPhotos[0];
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files?.length || !user) return;
+    const selectedFiles = Array.from(e.target.files || []);
+    if (!selectedFiles.length || !user || uploading) return;
+
+    // Capture the tab selected when Add was pressed, even if it changes mid-upload.
+    const category = uploadCategoryRef.current;
+    const existingInCategory = photos.filter(p => (p.category || 'acquired') === category).length;
+    const needsFirstPrimary = !photos.some(p => p.is_primary);
+    let nextIndex = 0;
+    let succeeded = 0;
+    const failures: { name: string; message: string }[] = [];
+
     setUploading(true);
-    try {
-      for (const file of Array.from(files)) {
-        const ext = file.name.split('.').pop();
-        const fileName = `${pianoId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: uploadErr } = await supabase.storage
-          .from('piano-photos')
-          .upload(fileName, file, { upsert: false });
-        if (uploadErr) throw uploadErr;
+    setUploadProgress({ completed: 0, total: selectedFiles.length });
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('piano-photos')
-          .getPublicUrl(fileName);
+    const worker = async () => {
+      while (nextIndex < selectedFiles.length) {
+        const index = nextIndex++;
+        const file = selectedFiles[index];
+        try {
+          const prepared = await preparePhoto(file);
+          if (prepared.blob.size > STORAGE_LIMIT_BYTES) {
+            throw new Error('Image exceeds the 10 MB upload limit.');
+          }
 
-        const isPrimary = categoryPhotos.length === 0;
-        await supabase.from('piano_photos').insert({
-          piano_id: pianoId,
-          storage_path: fileName,
-          url: publicUrl,
-          is_primary: isPrimary,
-          sort_order: categoryPhotos.length,
-          uploaded_by: user.id,
-          category: uploadCategory,
-        } as any);
+          const uniqueId = typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : Date.now().toString() + Math.random().toString(36).slice(2);
+          const storagePath = pianoId + '/' + uniqueId + '.' + prepared.extension;
+          const { error: uploadError } = await supabase.storage
+            .from('piano-photos')
+            .upload(storagePath, prepared.blob, {
+              contentType: prepared.contentType,
+              cacheControl: '3600',
+              upsert: false,
+            });
+          if (uploadError) throw uploadError;
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('piano-photos')
+            .getPublicUrl(storagePath);
+
+          const { error: recordError } = await supabase.from('piano_photos').insert({
+            piano_id: pianoId,
+            storage_path: storagePath,
+            url: publicUrl,
+            is_primary: needsFirstPrimary && index === 0,
+            sort_order: existingInCategory + index,
+            uploaded_by: user.id,
+            category,
+          } as any);
+
+          if (recordError) {
+            // Do not leave an orphaned image that isn't visible in the gallery.
+            const { error: cleanupError } = await supabase.storage.from('piano-photos').remove([storagePath]);
+            if (cleanupError) console.warn('Could not clean up unlinked photo', cleanupError);
+            throw recordError;
+          }
+
+          succeeded++;
+          // Each completed image becomes visible without waiting for the rest.
+          void qc.invalidateQueries({ queryKey: ['piano_photos', pianoId] });
+        } catch (err) {
+          failures.push({
+            name: file.name,
+            message: err instanceof Error ? err.message : 'Unexpected upload error',
+          });
+        } finally {
+          setUploadProgress(current => current
+            ? { ...current, completed: current.completed + 1 }
+            : current);
+        }
       }
-      qc.invalidateQueries({ queryKey: ['piano_photos', pianoId] });
-      toast({ title: 'Photos uploaded' });
-    } catch (err: any) {
-      toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
+    };
+
+    try {
+      // Two at a time improves throughput without exhausting mobile memory.
+      await Promise.all(Array.from({ length: Math.min(2, selectedFiles.length) }, () => worker()));
+      void qc.invalidateQueries({ queryKey: ['piano_photos', pianoId] });
+      setActiveTab(category);
+      if (succeeded > 0) {
+        toast({
+          title: succeeded + ' photo' + (succeeded === 1 ? '' : 's') + ' uploaded',
+          description: failures.length
+            ? failures.length + ' failed; successful photos are saved. You can reselect just the failed files.'
+            : 'Added to ' + CATEGORY_LABELS[category] + '.',
+        });
+      }
+      if (failures.length > 0) {
+        toast({
+          title: failures.length + ' photo' + (failures.length === 1 ? '' : 's') + ' failed',
+          description: failures[0].name + ': ' + failures[0].message,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setUploading(false);
+      setUploadProgress(null);
       if (fileRef.current) fileRef.current.value = '';
     }
   };
@@ -131,11 +263,12 @@ export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
   };
 
   const startUpload = (cat: PhotoCategory) => {
-    setUploadCategory(cat);
+    uploadCategoryRef.current = cat;
     fileRef.current?.click();
   };
 
   if (isLoading) return null;
+  if (isError) return <p className="mb-6 text-sm text-destructive">Photos could not be loaded. Please refresh and try again.</p>;
 
   const categories: PhotoCategory[] = ['acquired', 'renovation', 'finished'];
 
@@ -149,8 +282,22 @@ export function PianoPhotosSection({ pianoId }: { pianoId: string }) {
             Add
           </Button>
         )}
-        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic" multiple className="hidden" onChange={handleUpload} />
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple className="hidden" onChange={handleUpload} />
       </div>
+
+      {uploading && uploadProgress && (
+        <div className="mb-3" role="status" aria-live="polite">
+          <p className="mb-1 text-xs text-muted-foreground">
+            Preparing and uploading {uploadProgress.completed} of {uploadProgress.total} photos…
+          </p>
+          <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-200"
+              style={{ width: String(Math.round(uploadProgress.completed / uploadProgress.total * 100)) + '%' }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Category tabs */}
       <div className="flex gap-1 mb-3">
