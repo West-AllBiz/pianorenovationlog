@@ -6,8 +6,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Login from "./pages/Login";
-import EmailLogin from "./pages/EmailLogin";
-import { AUTH_MODE } from "./auth/emailConfig";
 import Catalogue from "./pages/Catalogue";
 import CatalogueDetail from "./pages/CatalogueDetail";
 import Dashboard from "./pages/Dashboard";
@@ -23,7 +21,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-export function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center min-h-screen"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
   if (!user) return <Navigate to="/login" replace />;
@@ -37,11 +35,9 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export const AppRoutes = () => (
+const AppRoutes = () => (
   <Routes>
-    <Route path="/login" element={<PublicRoute>{AUTH_MODE === "email" ? <EmailLogin /> : <Login />}</PublicRoute>} />
-    <Route path="/email-login" element={<EmailLogin />} />
-    <Route path="/email-login/callback" element={<EmailLogin callback />} />
+    <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
     <Route path="/catalogue" element={<Catalogue />} />
     <Route path="/catalogue/:id" element={<CatalogueDetail />} />
     <Route path="/" element={<Catalogue />} />

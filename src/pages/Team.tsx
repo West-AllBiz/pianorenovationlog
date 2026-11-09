@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AUTH_MODE } from '@/auth/emailConfig';
 import { motion } from 'framer-motion';
 import { UserPlus, Mail, Shield, LogIn, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,7 +51,6 @@ export default function Team() {
   };
 
   const handleSwitch = async (memberName: string) => {
-    if (AUTH_MODE === 'email') return;
     setSwitching(memberName);
     try {
       await signOut();
@@ -66,8 +64,8 @@ export default function Team() {
       }
       toast({ title: `Switched to ${memberName}` });
       navigate('/dashboard');
-    } catch (err: unknown) {
-      toast({ title: 'Error switching', description: err instanceof Error ? err.message : 'Account switching failed.', variant: 'destructive' });
+    } catch (err: any) {
+      toast({ title: 'Error switching', description: err.message, variant: 'destructive' });
     } finally {
       setSwitching(null);
     }
@@ -93,7 +91,6 @@ export default function Team() {
         </div>
       </motion.div>
 
-      {AUTH_MODE === 'email' && <p className="mb-4 text-sm text-muted-foreground">To use another account, sign out and sign in with that person’s confirmed email. Name-based account switching is disabled.</p>}
       <div className="space-y-3">
         {teamMembers.map((member, i) => {
           const isCurrentUser = currentEmail === member.email;
@@ -124,7 +121,7 @@ export default function Team() {
                     <Shield className="h-3 w-3 mr-1" /> {member.role}
                   </span>
                 </div>
-                {!isCurrentUser && AUTH_MODE !== 'email' && (
+                {!isCurrentUser && (
                   <Button
                     variant="outline"
                     size="sm"

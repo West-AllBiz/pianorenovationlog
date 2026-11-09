@@ -7,11 +7,10 @@ import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { AUTH_MODE } from '@/auth/emailConfig';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { signIn, signUp, authError } = useAuth();
+  const { signIn, signUp } = useAuth();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -102,12 +101,6 @@ export default function Login() {
               {loading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-
-          {authError && <p role="alert" className="mt-4 text-sm text-destructive">{authError}</p>}
-          {AUTH_MODE === 'review' && <div className="mt-6 text-center text-sm">
-            <Link to="/email-login" className="underline">Sign in with email</Link>
-            <p className="mt-1 text-xs text-muted-foreground">For an existing, confirmed Workshop email account. Name-based staff access remains available above.</p>
-          </div>}
 
           <p className="mt-8 text-center text-[10px] font-mono text-muted-foreground/50 uppercase tracking-wider">
             Nick's Piano Services · Internal
