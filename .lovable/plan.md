@@ -1,0 +1,5 @@
+Read-only preflight answers. Nothing to build; no changes planned.
+
+1. Redirect `https://nworkshop.nickspianoservices.com/**` is allowed, which covers `/email-login/callback`. Site URL is `https://pianorenovationlog.lovable.app`. New signups were turned off last turn. I could not re-read that setting with a read-only tool this turn.
+2. A push to GitHub main only syncs the code. It does not publish production. Publishing happens through Publish/Update. I cannot see the published commit SHA from here. Rollback: restore the earlier version in Lovable's version history, then click Publish/Update. You can also revert the commit on main and republish.
+3. The project has three lockfiles: `bun.lock`, `bun.lockb` and `package-lock.json`. The build script is `vite build`. I cannot see the builder's exact install command or which lockfile it uses. Vite loads `.env.production` in production mode, and the existing `.env` still applies. Variables set only in `.env.production` are added, and `VITE_SUPABASE_*` stays from `.env` unless you redefine it. One limit: I have not confirmed that Lovable's hosted build reads a new `.env.production` file.
