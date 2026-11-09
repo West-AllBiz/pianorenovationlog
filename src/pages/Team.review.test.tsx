@@ -1,0 +1,12 @@
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+const auth=vi.hoisted(()=>({user:{email:'current@example.test'},signIn:vi.fn(),signUp:vi.fn(),signOut:vi.fn()}));
+vi.mock('@/hooks/useAuth',()=>({useAuth:()=>auth}));
+vi.mock('@/auth/emailConfig',()=>({AUTH_MODE:'review'}));
+vi.mock('@tanstack/react-query',()=>({useQuery:()=>({isLoading:false,data:[{id:'synthetic-member',name:'Fixture Staff',email:'fixture.staff@piano.local',role:'viewer'}]})}));
+vi.mock('@/integrations/supabase/client',()=>({supabase:{}}));
+import Team from './Team';
+beforeEach(()=>{vi.clearAllMocks();auth.signIn.mockResolvedValue({error:null});auth.signOut.mockResolvedValue(undefined);});
+afterEach(cleanup);
+it('retains the existing Team switch path in additive review mode',async()=>{render(<MemoryRouter><Team/></MemoryRouter>);expect(screen.queryByText(/Name-based account switching is disabled/)).not.toBeInTheDocument();fireEvent.click(screen.getByRole('button',{name:'Switch'}));await waitFor(()=>expect(auth.signIn).toHaveBeenCalledTimes(1));expect(auth.signIn.mock.calls[0][0]).toBe('fixture.staff@piano.local');expect(auth.signUp).not.toHaveBeenCalled();});
