@@ -1,6 +1,8 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { useRef, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, Piano, Kanban, DollarSign, Calendar,
+  LayoutDashboard, Piano, Kanban, Calendar,
   BarChart3, Users, Settings, LogOut, Music, Scale, BookOpen
 } from 'lucide-react';
 
@@ -21,6 +23,18 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onClose }: SidebarProps) {
+  const { user, profile, role, signOut } = useAuth();
+  const [busy, setBusy] = useState(false);
+  const working = useRef(false);
+  const displayName = profile?.full_name || user?.email || 'Workshop account';
+  const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+  const leave = async () => {
+    if (working.current) return;
+    working.current = true; setBusy(true);
+    try { await signOut(); }
+    catch { /* The provider retains a safe error on the login screen after unmount. */ }
+    finally { working.current = false; setBusy(false); }
+  };
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
@@ -59,13 +73,17 @@ export function Sidebar({ onClose }: SidebarProps) {
       <div className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
-            NW
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-accent-foreground truncate">Nick West</p>
-            <p className="text-xs text-sidebar-foreground/60">Admin</p>
+            <p className="text-sm font-medium text-sidebar-accent-foreground truncate">{displayName}</p>
+            <p className="text-xs text-sidebar-foreground/60">{role}</p>
+            <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
           </div>
         </div>
+        <button type="button" onClick={() => { void leave(); }} disabled={busy} className="flex items-center gap-2 rounded px-3 py-2 text-sm touch-target">
+          <LogOut className="h-4 w-4" aria-hidden="true" />{busy ? 'Signing out…' : 'Sign out'}
+        </button>
       </div>
     </div>
   );
