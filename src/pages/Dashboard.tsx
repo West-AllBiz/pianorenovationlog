@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { AddPianoDialog } from '@/components/AddPianoDialog';
 import { STATUS_LABELS, STATUS_COLORS, OWNERSHIP_LABELS, OWNERSHIP_COLORS, COLOR_TAG_HEX } from '@/types/piano';
 import type { ColorTag, PianoStatus, OwnershipCategory } from '@/types/piano';
+import { RESTORATION_STATUSES } from '@/lib/inventoryFilters';
 
 const fadeIn = {
   initial: { opacity: 0, y: 12 },
@@ -28,21 +29,20 @@ export default function Dashboard() {
     const clientPianos = pianos.filter(p => p.ownership_category === 'client_piano').length;
     const donationProjects = pianos.filter(p => p.ownership_category === 'donation_project').length;
     const restorationArchive = pianos.filter(p => p.ownership_category === 'restoration_archive').length;
-    const restorationStatuses = ['restoration_work', 'regulation', 'voicing', 'tuning', 'cabinet_work'];
-    const inRestoration = pianos.filter(p => restorationStatuses.includes(p.status)).length;
+    const inRestoration = pianos.filter(p => RESTORATION_STATUSES.includes(p.status as PianoStatus)).length;
     const awaitingParts = pianos.filter(p => p.status === 'awaiting_parts').length;
     const readyForSale = pianos.filter(p => p.status === 'ready_for_sale').length;
     return { totalPianos, businessInventory, clientPianos, donationProjects, restorationArchive, inRestoration, awaitingParts, readyForSale };
   }, [pianos]);
 
   const statCards = [
-    { label: 'Total Pianos', value: stats.totalPianos, icon: Piano, color: 'text-foreground' },
-    { label: 'Business Inventory', value: stats.businessInventory, icon: Tag, color: 'text-success' },
-    { label: 'Client Pianos', value: stats.clientPianos, icon: Users, color: 'text-info' },
-    { label: 'Donation Projects', value: stats.donationProjects, icon: Heart, color: 'text-primary' },
-    { label: 'In Restoration', value: stats.inRestoration, icon: Wrench, color: 'text-warning' },
-    { label: 'Awaiting Parts', value: stats.awaitingParts, icon: Clock, color: 'text-destructive' },
-    { label: 'Ready for Sale', value: stats.readyForSale, icon: PackageCheck, color: 'text-success' },
+    { label: 'Total Pianos', to: '/inventory', value: stats.totalPianos, icon: Piano, color: 'text-foreground' },
+    { label: 'Business Inventory', to: '/inventory?ownership=business_inventory', value: stats.businessInventory, icon: Tag, color: 'text-success' },
+    { label: 'Client Pianos', to: '/inventory?ownership=client_piano', value: stats.clientPianos, icon: Users, color: 'text-info' },
+    { label: 'Donation Projects', to: '/inventory?ownership=donation_project', value: stats.donationProjects, icon: Heart, color: 'text-primary' },
+    { label: 'In Restoration', to: '/inventory?status=in_restoration', value: stats.inRestoration, icon: Wrench, color: 'text-warning' },
+    { label: 'Awaiting Parts', to: '/inventory?status=awaiting_parts', value: stats.awaitingParts, icon: Clock, color: 'text-destructive' },
+    { label: 'Ready for Sale', to: '/inventory?status=ready_for_sale', value: stats.readyForSale, icon: PackageCheck, color: 'text-success' },
   ];
 
   if (isLoading) {
@@ -51,7 +51,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-      <motion.div {...fadeIn} transition={{ duration: 0.4 }} className="flex items-center justify-between mb-6">
+      <motion.div {...fadeIn} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="font-heading text-2xl sm:text-3xl font-bold mb-1">Dashboard</h1>
           <p className="text-muted-foreground">Welcome back{profile?.full_name ? `, ${profile.full_name}` : ''}.</p>
@@ -65,12 +65,15 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {statCards.map((stat, i) => (
-          <motion.div key={stat.label} {...fadeIn} transition={{ duration: 0.4, delay: i * 0.05 }} className="stat-card">
+          <motion.div key={stat.label} {...fadeIn} transition={{ duration: 0.4, delay: i * 0.05 }} className="min-w-0">
+            <Link to={stat.to} aria-label={`View ${stat.label}: ${stat.value}`} className="stat-card block h-full min-w-0 hover:border-primary/50 hover:shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
             <div className="flex items-center justify-between mb-3">
-              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+              <stat.icon aria-hidden="true" className={`h-5 w-5 ${stat.color}`} />
+              <ArrowRight aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-2xl font-bold font-heading">{stat.value}</p>
-            <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
+            <p className="text-xs text-muted-foreground mt-1 break-words">{stat.label}</p>
+            </Link>
           </motion.div>
         ))}
       </div>
