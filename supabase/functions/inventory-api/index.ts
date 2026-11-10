@@ -130,7 +130,6 @@ function shapeListItem(piano: any, cat: any, heroUrl: string | null) {
     catalogue_status: cat?.status ?? "",
     percent_complete: piano.percent_complete ?? null,
     asking_price: piano.asking_price ?? null,
-    sold_price: piano.sold_price ?? null,
     price_display: cat?.price_display ?? "",
     hero_photo_url: heroUrl,
     public_description: cat?.public_description ?? "",
@@ -149,7 +148,8 @@ async function shapeDetail(piano: any, cat: any, photos: any[]) {
     country_of_origin: piano.country_of_origin ?? "",
     bench_included: !!piano.bench_included,
     show_restoration_notes: !!cat?.show_restoration_notes,
-    public_restoration_note: cat?.public_restoration_note ?? "",
+    public_restoration_note:
+      cat?.show_restoration_notes === true ? (cat?.public_restoration_note ?? "") : "",
     show_labor_hours: !!cat?.show_labor_hours,
     show_task_list: !!cat?.show_task_list,
     show_cost_breakdown: !!cat?.show_cost_breakdown,
